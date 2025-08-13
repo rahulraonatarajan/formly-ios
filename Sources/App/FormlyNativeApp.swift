@@ -3,9 +3,9 @@ import CoreData
 
 @main
 struct FormlyNativeApp: App {
-    @StateObject private var storageService = StorageService()
-    @StateObject private var aiService = AIService()
-    @StateObject private var backupService = BackupService()
+    @StateObject private var storageService = StorageService.shared
+    @StateObject private var aiService = AIService.shared
+    @StateObject private var backupService = BackupService.shared
     
     var body: some Scene {
         WindowGroup {
@@ -23,6 +23,9 @@ struct FormlyNativeApp: App {
     private func setupApp() {
         // Register background tasks
         BackgroundTaskManager.shared.registerBackgroundTasks()
+        
+        // Schedule background tasks
+        BackgroundTaskManager.shared.scheduleBackgroundTasks()
         
         // Load initial templates if needed
         Task {
@@ -71,5 +74,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .environment(\.managedObjectContext, StorageService().viewContext)
+        .environment(\.managedObjectContext, StorageService.shared.viewContext)
 }
