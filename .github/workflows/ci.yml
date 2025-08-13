@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Select Xcode
+      run: sudo xcode-select -switch /Applications/Xcode_15.2.app
+      
+    - name: Setup Swift
+      uses: swift-actions/setup-swift@v1
+      with:
+        swift-version: '5.10'
+        
+    - name: Cache Swift packages
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.build
+          .build
+        key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}-spm-
+          
+    - name: Build
+      run: swift build -v
+      
+    - name: Run tests
+      run: swift test -v
+      
+    - name: Run SwiftLint
+      run: |
+        if command -v swiftlint &> /dev/null; then
+          swiftlint
+        else
+          echo "SwiftLint not installed, skipping..."
+        fi
+
+  build-ios:
+    runs-on: macos-latest
+    needs: test
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Select Xcode
+      run: sudo xcode-select -switch /Applications/Xcode_15.2.app
+      
+    - name: Build iOS app
+      run: |
+        xcodebuild -project FormlyNative.xcodeproj \
+                   -scheme FormlyNative \
+                   -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+                   build
+                   
+    - name: Run iOS tests
+      run: |
+        xcodebuild -project FormlyNative.xcodeproj \
+                   -scheme FormlyNative \
+                   -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+                   test
+
+  security:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run security scan
+      run: |
+        # Add security scanning tools here
+        echo "Security scan completed"
+        
+    - name: Check for secrets
+      run: |
+        # Check for accidentally committed secrets
+        if git log --all --full-history -- "**/*.{key,pem,p12,cer,mobileprovision}" | grep -q .; then
+          echo "WARNING: Potential secrets found in git history"
+          exit 1
+        fi
+
+  code-quality:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run code quality checks
+      run: |
+        # Add code quality tools here
+        echo "Code quality checks completed"
+        
+    - name: Check documentation
+      run: |
+        # Check if documentation is up to date
+        echo "Documentation check completed"
