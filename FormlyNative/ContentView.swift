@@ -1020,24 +1020,44 @@ struct FormFillingView: View {
     
     private var structuredFormView: some View {
         ZStack {
-            ScrollView {
-                LazyVStack(spacing: 16) {
-                    ForEach(Array(getQuestionsForTemplate().enumerated()), id: \.offset) { index, question in
-                        StructuredFormField(
-                            question: question,
-                            value: Binding(
-                                get: { formData[question.field] ?? "" },
-                                set: { formData[question.field] = $0 }
-                            ),
-                            isCompleted: !(formData[question.field] ?? "").isEmpty,
-                            isCurrentStep: index == currentStep
-                        )
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        ForEach(Array(getQuestionsForTemplate().enumerated()), id: \.offset) { index, question in
+                            StructuredFormField(
+                                question: question,
+                                value: Binding(
+                                    get: { formData[question.field] ?? "" },
+                                    set: { formData[question.field] = $0 }
+                                ),
+                                isCompleted: !(formData[question.field] ?? "").isEmpty,
+                                isCurrentStep: index == currentStep
+                            )
+                            .id("field_\(index)") // Add ID for scrolling
+                        }
+                    }
+                    .padding()
+                    .padding(.bottom, 80) // Add padding for floating chat bubble
+                }
+                .background(Color(.systemGroupedBackground))
+                .onChange(of: currentStep) { newStep in
+                    // Auto-scroll to current field with animation
+                    withAnimation(.easeInOut(duration: 0.8)) {
+                        proxy.scrollTo("field_\(newStep)", anchor: .top)
                     }
                 }
-                .padding()
-                .padding(.bottom, 80) // Add padding for floating chat bubble
+                .onChange(of: formData) { _ in
+                    // Auto-scroll to next field when current field is completed
+                    let nextStep = currentStep + 1
+                    if nextStep < getQuestionsForTemplate().count {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            withAnimation(.easeInOut(duration: 0.8)) {
+                                proxy.scrollTo("field_\(nextStep)", anchor: .top)
+                            }
+                        }
+                    }
+                }
             }
-            .background(Color(.systemGroupedBackground))
             
             // Floating chat bubble
             VStack {
@@ -1059,7 +1079,11 @@ struct FormFillingView: View {
                     formData: $formData,
                     isVisible: $showingMiniChat,
                     currentStep: currentStep,
-                    questions: getQuestionsForTemplate()
+                    questions: getQuestionsForTemplate(),
+                    onFieldAsked: { fieldIndex in
+                        // Update current step to trigger scrolling
+                        currentStep = fieldIndex
+                    }
                 )
             }
         }
@@ -1408,6 +1432,8 @@ struct StructuredFormField: View {
     let isCompleted: Bool
     let isCurrentStep: Bool
     
+    @State private var pulseAnimation = false
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -1423,6 +1449,8 @@ struct StructuredFormField: View {
                 } else if isCurrentStep {
                     Image(systemName: "arrow.right.circle.fill")
                         .foregroundColor(.blue)
+                        .scaleEffect(pulseAnimation ? 1.2 : 1.0)
+                        .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: pulseAnimation)
                 }
             }
             
@@ -1439,6 +1467,16 @@ struct StructuredFormField: View {
                 .stroke(isCurrentStep ? Color.blue : Color.clear, lineWidth: 2)
         )
         .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+        .scaleEffect(isCurrentStep && pulseAnimation ? 1.02 : 1.0)
+        .animation(.easeInOut(duration: 0.3), value: isCurrentStep)
+        .onAppear {
+            if isCurrentStep {
+                pulseAnimation = true
+            }
+        }
+        .onChange(of: isCurrentStep) { newValue in
+            pulseAnimation = newValue
+        }
     }
 }
 
@@ -1583,6 +1621,7 @@ struct MiniChatOverlay: View {
     @Binding var isVisible: Bool
     let currentStep: Int
     let questions: [FormQuestion]
+    let onFieldAsked: (Int) -> Void // Callback to notify parent about field being asked
     
     @State private var messages: [FormMessage] = []
     @State private var inputText = ""
@@ -1752,6 +1791,9 @@ struct MiniChatOverlay: View {
                     timestamp: Date()
                 )
                 messages.append(nextQuestionMessage)
+                
+                // Notify parent to scroll to the next field
+                onFieldAsked(currentStep + 1)
             } else {
                 // Form is complete
                 let completionMessage = FormMessage(
