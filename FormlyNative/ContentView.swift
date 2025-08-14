@@ -838,6 +838,13 @@ struct FormFillingView: View {
     @State private var messages: [FormMessage] = []
     @State private var inputText = ""
     @State private var isLoading = false
+    @State private var showingFormPreview = false
+    @State private var entryMode: EntryMode = .conversational
+    
+    enum EntryMode {
+        case conversational
+        case structured
+    }
     
     var body: some View {
         NavigationView {
@@ -845,11 +852,19 @@ struct FormFillingView: View {
                 // Progress header
                 progressHeader
                 
-                // Messages area
-                messagesArea
+                // Entry mode selector
+                entryModeSelector
                 
-                // Input area
-                inputArea
+                if entryMode == .conversational {
+                    // Messages area
+                    messagesArea
+                    
+                    // Input area
+                    inputArea
+                } else {
+                    // Structured form view
+                    structuredFormView
+                }
             }
             .navigationTitle(template.name)
             .navigationBarTitleDisplayMode(.inline)
@@ -860,15 +875,30 @@ struct FormFillingView: View {
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        saveForm()
+                    HStack {
+                        Button("Preview") {
+                            showingFormPreview = true
+                        }
+                        .disabled(formData.isEmpty)
+                        
+                        Button("Save") {
+                            saveForm()
+                        }
+                        .disabled(formData.isEmpty)
                     }
-                    .disabled(formData.isEmpty)
                 }
             }
         }
+        .sheet(isPresented: $showingFormPreview) {
+            FormPreviewView(template: template, formData: formData)
+        }
         .onAppear {
             startForm()
+        }
+        .onChange(of: formData) { _ in
+            if entryMode == .structured {
+                updateCurrentStep()
+            }
         }
     }
     
@@ -891,6 +921,40 @@ struct FormFillingView: View {
         .padding(.horizontal)
         .padding(.top, 8)
         .background(Color(.systemGroupedBackground))
+    }
+    
+    private var entryModeSelector: some View {
+        HStack(spacing: 0) {
+            Button(action: {
+                entryMode = .conversational
+            }) {
+                HStack {
+                    Image(systemName: "message.fill")
+                    Text("Chat")
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(entryMode == .conversational ? Color.blue : Color(.systemGray5))
+                .foregroundColor(entryMode == .conversational ? .white : .primary)
+            }
+            
+            Button(action: {
+                entryMode = .structured
+            }) {
+                HStack {
+                    Image(systemName: "doc.text.fill")
+                    Text("Form")
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(entryMode == .structured ? Color.blue : Color(.systemGray5))
+                .foregroundColor(entryMode == .structured ? .white : .primary)
+            }
+        }
+        .background(Color(.systemGray5))
+        .cornerRadius(8)
+        .padding(.horizontal)
+        .padding(.vertical, 8)
     }
     
     private var messagesArea: some View {
@@ -934,6 +998,26 @@ struct FormFillingView: View {
             .buttonStyle(.borderedProminent)
         }
         .padding()
+        .background(Color(.systemGroupedBackground))
+    }
+    
+    private var structuredFormView: some View {
+        ScrollView {
+            LazyVStack(spacing: 16) {
+                ForEach(Array(getQuestionsForTemplate().enumerated()), id: \.offset) { index, question in
+                    StructuredFormField(
+                        question: question,
+                        value: Binding(
+                            get: { formData[question.field] ?? "" },
+                            set: { formData[question.field] = $0 }
+                        ),
+                        isCompleted: !(formData[question.field] ?? "").isEmpty,
+                        isCurrentStep: index == currentStep
+                    )
+                }
+            }
+            .padding()
+        }
         .background(Color(.systemGroupedBackground))
     }
     
@@ -1000,6 +1084,15 @@ struct FormFillingView: View {
                 completeForm()
             }
         }
+    }
+    
+    private func updateCurrentStep() {
+        let questions = getQuestionsForTemplate()
+        let completedCount = questions.enumerated().filter { index, question in
+            !(formData[question.field] ?? "").isEmpty
+        }.count
+        
+        currentStep = min(completedCount, questions.count - 1)
     }
     
     private func completeForm() {
@@ -1112,6 +1205,188 @@ struct FormMessageBubble: View {
                 Spacer()
             }
         }
+    }
+}
+
+struct FormPreviewView: View {
+    let template: FormTemplate
+    let formData: [String: String]
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Form header
+                    formHeader
+                    
+                    // Form content
+                    formContent
+                    
+                    // Completion status
+                    completionStatus
+                }
+                .padding()
+            }
+            .background(Color(.systemGroupedBackground))
+            .navigationTitle("Form Preview")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+    
+    private var formHeader: some View {
+        VStack(spacing: 12) {
+            Image(systemName: template.icon)
+                .font(.system(size: 40))
+                .foregroundColor(template.color)
+            
+            Text(template.name)
+                .font(.title2)
+                .fontWeight(.bold)
+            
+            Text("Preview of your completed form")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+    }
+    
+    private var formContent: some View {
+        VStack(spacing: 16) {
+            ForEach(Array(formData.keys.sorted()), id: \.self) { key in
+                if let value = formData[key], !value.isEmpty {
+                    FormPreviewField(
+                        label: getFieldLabel(for: key),
+                        value: value
+                    )
+                }
+            }
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+    }
+    
+    private var completionStatus: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Text("Completion")
+                    .font(.headline)
+                Spacer()
+                Text("\(Int((Double(formData.values.filter { !$0.isEmpty }.count) / Double(getTotalFields())) * 100))%")
+                    .font(.headline)
+                    .foregroundColor(.blue)
+            }
+            
+            ProgressView(value: Double(formData.values.filter { !$0.isEmpty }.count), total: Double(getTotalFields()))
+                .progressViewStyle(LinearProgressViewStyle(tint: .blue))
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+    }
+    
+    private func getFieldLabel(for key: String) -> String {
+        switch key {
+        case "fullName": return "Full Legal Name"
+        case "dateOfBirth": return "Date of Birth"
+        case "licenseNumber": return "License Number"
+        case "address": return "Address"
+        case "state": return "State"
+        case "passportNumber": return "Passport Number"
+        case "purpose": return "Purpose of Visit"
+        case "duration": return "Duration of Stay"
+        case "income": return "Monthly Income"
+        case "householdSize": return "Household Size"
+        case "expenses": return "Monthly Expenses"
+        case "ssn": return "Social Security Number"
+        case "deductions": return "Total Deductions"
+        case "filingStatus": return "Filing Status"
+        default: return key.capitalized
+        }
+    }
+    
+    private func getTotalFields() -> Int {
+        switch template.id {
+        case "dmv-renewal": return 5
+        case "ds-160": return 5
+        case "medicaid": return 5
+        case "snap": return 5
+        case "tax-return": return 5
+        default: return 5
+        }
+    }
+}
+
+struct FormPreviewField: View {
+    let label: String
+    let value: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .textCase(.uppercase)
+            
+            Text(value)
+                .font(.body)
+                .fontWeight(.medium)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .background(Color(.systemGray6))
+        .cornerRadius(8)
+    }
+}
+
+struct StructuredFormField: View {
+    let question: FormQuestion
+    @Binding var value: String
+    let isCompleted: Bool
+    let isCurrentStep: Bool
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(question.text)
+                    .font(.headline)
+                    .fontWeight(.medium)
+                
+                Spacer()
+                
+                if isCompleted {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                } else if isCurrentStep {
+                    Image(systemName: "arrow.right.circle.fill")
+                        .foregroundColor(.blue)
+                }
+            }
+            
+            TextField("Enter your answer...", text: $value)
+                .textFieldStyle(.roundedBorder)
+                .background(isCurrentStep ? Color.blue.opacity(0.1) : Color.clear)
+                .cornerRadius(8)
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(isCurrentStep ? Color.blue : Color.clear, lineWidth: 2)
+        )
+        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
 }
 
