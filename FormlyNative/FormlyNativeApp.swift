@@ -3,17 +3,19 @@ import CoreData
 
 @main
 struct FormlyNativeApp: App {
-    @StateObject private var storageService = StorageService.shared
-    @StateObject private var aiService = AIService.shared
-    @StateObject private var backupService = BackupService.shared
+    // TODO: Add services back once they're properly integrated
+    // @StateObject private var storageService = StorageService.shared
+    // @StateObject private var aiService = AIService.shared
+    // @StateObject private var backupService = BackupService.shared
     
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environment(\.managedObjectContext, storageService.viewContext)
-                .environmentObject(storageService)
-                .environmentObject(aiService)
-                .environmentObject(backupService)
+                // TODO: Add environment objects back once services are integrated
+                // .environment(\.managedObjectContext, storageService.viewContext)
+                // .environmentObject(storageService)
+                // .environmentObject(aiService)
+                // .environmentObject(backupService)
                 .onAppear {
                     setupApp()
                 }
@@ -21,58 +23,26 @@ struct FormlyNativeApp: App {
     }
     
     private func setupApp() {
-        // Register background tasks
-        BackgroundTaskManager.shared.registerBackgroundTasks()
+        // TODO: Add background tasks back once services are integrated
+        // BackgroundTaskManager.shared.registerBackgroundTasks()
+        // BackgroundTaskManager.shared.scheduleBackgroundTasks()
         
-        // Schedule background tasks
-        BackgroundTaskManager.shared.scheduleBackgroundTasks()
-        
-        // Load initial templates if needed
-        Task {
-            await loadInitialTemplates()
-        }
+        // TODO: Add template loading back once services are integrated
+        // Task {
+        //     await loadInitialTemplates()
+        // }
     }
     
     private func loadInitialTemplates() async {
-        do {
-            try await TemplateLoader.shared.loadInitialTemplates()
-        } catch {
-            print("Failed to load initial templates: \(error)")
-        }
-    }
-}
-
-struct ContentView: View {
-    @State private var selectedTab = 0
-    
-    var body: some View {
-        TabView(selection: $selectedTab) {
-            TemplatesView()
-                .tabItem {
-                    Image(systemName: "doc.text")
-                    Text("Templates")
-                }
-                .tag(0)
-            
-            SessionsView()
-                .tabItem {
-                    Image(systemName: "list.bullet")
-                    Text("Sessions")
-                }
-                .tag(1)
-            
-            SettingsView()
-                .tabItem {
-                    Image(systemName: "gear")
-                    Text("Settings")
-                }
-                .tag(2)
-        }
-        .accentColor(.blue)
+        // TODO: Add template loading back once services are integrated
+        // do {
+        //     try await TemplateLoader.shared.loadInitialTemplates()
+        // } catch {
+        //     print("Failed to load initial templates: \(error)")
+        // }
     }
 }
 
 #Preview {
     ContentView()
-        .environment(\.managedObjectContext, StorageService.shared.viewContext)
 }
