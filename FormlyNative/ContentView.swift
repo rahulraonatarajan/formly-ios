@@ -33,25 +33,23 @@ struct ContentView: View {
                 }
                 .tag(3)
             
-            FormTemplatesView()
+            MoreView()
                 .tabItem {
-                    Image(systemName: "doc.text.fill")
-                    Text("Form Templates")
+                    Image(systemName: "ellipsis")
+                    Text("More")
                 }
                 .tag(4)
-            
-            SettingsView()
-                .tabItem {
-                    Image(systemName: "gear")
-                    Text("Settings")
-                }
-                .tag(5)
         }
         .accentColor(.blue)
+        .preferredColorScheme(.dark) // Force dark mode to match screenshot
     }
 }
 
 struct HomeView: View {
+    @State private var showingFormTemplates = false
+    @State private var showingAIAssistant = false
+    @State private var showingScanForm = false
+    
     var body: some View {
         NavigationView {
             ScrollView {
@@ -67,8 +65,17 @@ struct HomeView: View {
                 }
                 .padding(.horizontal, 20)
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color.black)
             .navigationBarHidden(true)
+        }
+        .sheet(isPresented: $showingFormTemplates) {
+            FormTemplatesView()
+        }
+        .sheet(isPresented: $showingAIAssistant) {
+            AIAssistantView()
+        }
+        .sheet(isPresented: $showingScanForm) {
+            ScanFormView()
         }
     }
     
@@ -127,7 +134,7 @@ struct HomeView: View {
             Text("Quick Actions")
                 .font(.title2)
                 .fontWeight(.bold)
-                .foregroundColor(.primary)
+                .foregroundColor(.white)
             
             HStack(spacing: 12) {
                 // Scan Form Card
@@ -136,7 +143,8 @@ struct HomeView: View {
                     iconColor: .blue,
                     title: "Scan Form",
                     subtitle: "Take a photo of any form...",
-                    backgroundColor: .blue.opacity(0.1)
+                    backgroundColor: .blue.opacity(0.1),
+                    action: { showingScanForm = true }
                 )
                 
                 // AI Assistant Card
@@ -145,7 +153,8 @@ struct HomeView: View {
                     iconColor: .purple,
                     title: "AI Assistant",
                     subtitle: "Get AI help with forms",
-                    backgroundColor: .purple.opacity(0.1)
+                    backgroundColor: .purple.opacity(0.1),
+                    action: { showingAIAssistant = true }
                 )
                 
                 // Form Templates Card
@@ -154,7 +163,8 @@ struct HomeView: View {
                     iconColor: .green,
                     title: "Form Templates",
                     subtitle: "Pre-built form templ...",
-                    backgroundColor: .green.opacity(0.1)
+                    backgroundColor: .green.opacity(0.1),
+                    action: { showingFormTemplates = true }
                 )
             }
         }
@@ -165,7 +175,7 @@ struct HomeView: View {
             Text("Recent Forms")
                 .font(.title2)
                 .fontWeight(.bold)
-                .foregroundColor(.primary)
+                .foregroundColor(.white)
             
             VStack(spacing: 12) {
                 // Medicaid Application
@@ -173,7 +183,8 @@ struct HomeView: View {
                     title: "Medicaid Application",
                     date: "2024-01-15",
                     status: "Completed",
-                    statusColor: .green
+                    statusColor: .green,
+                    action: { showingFormTemplates = true }
                 )
                 
                 // SNAP Benefits Form
@@ -181,7 +192,8 @@ struct HomeView: View {
                     title: "SNAP Benefits Form",
                     date: "2024-01-10",
                     status: "In Progress",
-                    statusColor: .blue
+                    statusColor: .blue,
+                    action: { showingFormTemplates = true }
                 )
                 
                 // Additional form (partially visible)
@@ -189,7 +201,8 @@ struct HomeView: View {
                     title: "Tax Return Form",
                     date: "2024-01-05",
                     status: "Draft",
-                    statusColor: .orange
+                    statusColor: .orange,
+                    action: { showingFormTemplates = true }
                 )
             }
         }
@@ -202,33 +215,37 @@ struct QuickActionCard: View {
     let title: String
     let subtitle: String
     let backgroundColor: Color
+    let action: () -> Void
     
     var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundColor(iconColor)
-                .frame(width: 40, height: 40)
-                .background(backgroundColor)
-                .clipShape(Circle())
-            
-            VStack(spacing: 4) {
-                Text(title)
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
+        Button(action: action) {
+            VStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.title2)
+                    .foregroundColor(iconColor)
+                    .frame(width: 40, height: 40)
+                    .background(backgroundColor)
+                    .clipShape(Circle())
                 
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
+                VStack(spacing: 4) {
+                    Text(title)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.black)
+                    
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
             }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(Color.white)
+            .cornerRadius(12)
+            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
-        .background(Color.white)
-        .cornerRadius(12)
-        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
@@ -237,112 +254,892 @@ struct RecentFormCard: View {
     let date: String
     let status: String
     let statusColor: Color
+    let action: () -> Void
     
     var body: some View {
-        HStack {
+        Button(action: action) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.headline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.black)
+                    
+                    Text(date)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                Text(status)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 4)
+                    .background(statusColor)
+                    .cornerRadius(12)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color.white)
+            .cornerRadius(12)
+            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// Placeholder Views for other tabs
+struct AIAssistantView: View {
+    @State private var messages: [FormMessage] = []
+    @State private var inputText = ""
+    @State private var isLoading = false
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // Messages area
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(messages) { message in
+                                FormMessageBubble(message: message)
+                            }
+                            
+                            if isLoading {
+                                HStack {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                    Text("AI is thinking...")
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding()
+                            }
+                        }
+                        .padding()
+                    }
+                    .onChange(of: messages.count) { _ in
+                        withAnimation {
+                            proxy.scrollTo(messages.last?.id, anchor: .bottom)
+                        }
+                    }
+                }
+                
+                // Input area
+                HStack(spacing: 12) {
+                    TextField("Ask me anything about forms...", text: $inputText)
+                        .textFieldStyle(.roundedBorder)
+                        .disabled(isLoading)
+                    
+                    Button("Send") {
+                        sendMessage()
+                    }
+                    .disabled(inputText.isEmpty || isLoading)
+                    .buttonStyle(.borderedProminent)
+                }
+                .padding()
+                .background(Color(.systemGroupedBackground))
+            }
+            .navigationTitle("AI Assistant")
+            .onAppear {
+                startConversation()
+            }
+        }
+    }
+    
+    private func startConversation() {
+        let welcomeMessage = FormMessage(
+            id: UUID(),
+            role: .assistant,
+            content: "Hello! I'm your AI form assistant. I can help you with:\n\n• Understanding form requirements\n• Filling out complex forms\n• Explaining legal terms\n• Providing step-by-step guidance\n\nWhat would you like help with today?",
+            timestamp: Date()
+        )
+        messages.append(welcomeMessage)
+    }
+    
+    private func sendMessage() {
+        guard !inputText.isEmpty else { return }
+        
+        let userMessage = FormMessage(
+            id: UUID(),
+            role: .user,
+            content: inputText,
+            timestamp: Date()
+        )
+        messages.append(userMessage)
+        
+        let userInput = inputText
+        inputText = ""
+        isLoading = true
+        
+        // Simulate AI response
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            let aiResponse = generateAIResponse(to: userInput)
+            let responseMessage = FormMessage(
+                id: UUID(),
+                role: .assistant,
+                content: aiResponse,
+                timestamp: Date()
+            )
+            messages.append(responseMessage)
+            isLoading = false
+        }
+    }
+    
+    private func generateAIResponse(to userInput: String) -> String {
+        let lowercased = userInput.lowercased()
+        
+        if lowercased.contains("dmv") || lowercased.contains("license") || lowercased.contains("driver") {
+            return "For DMV license renewal, you'll typically need:\n\n• Current driver's license\n• Proof of identity (passport, birth certificate)\n• Proof of residency (utility bill, lease)\n• Payment method\n\nMost states allow online renewal if your license isn't expired for more than 1 year. Would you like me to help you with a specific state's requirements?"
+        } else if lowercased.contains("visa") || lowercased.contains("ds-160") || lowercased.contains("travel") {
+            return "The DS-160 is a comprehensive visa application form. Key requirements include:\n\n• Valid passport\n• Travel itinerary\n• Employment/education history\n• Financial information\n• Previous travel history\n\nThe form takes about 90 minutes to complete. Would you like me to walk you through a specific section?"
+        } else if lowercased.contains("medicaid") || lowercased.contains("health") {
+            return "Medicaid eligibility depends on:\n\n• Income level (varies by state)\n• Household size\n• Age and disability status\n• Citizenship status\n\nYou'll need documents like pay stubs, tax returns, and proof of citizenship. Would you like me to help you check eligibility for your state?"
+        } else if lowercased.contains("snap") || lowercased.contains("food") || lowercased.contains("benefits") {
+            return "SNAP (food stamps) benefits are based on:\n\n• Household income (must be below 130% of poverty level)\n• Household size\n• Monthly expenses\n• Assets\n\nYou'll need proof of income, expenses, and household composition. Would you like me to help you calculate potential benefits?"
+        } else if lowercased.contains("tax") || lowercased.contains("irs") {
+            return "For tax returns, you'll need:\n\n• W-2 forms from employers\n• 1099 forms for other income\n• Receipts for deductions\n• Previous year's tax return\n• Social Security numbers for all dependents\n\nWould you like me to help you understand specific deductions or credits you might qualify for?"
+        } else {
+            return "I can help you with various forms including DMV license renewal, DS-160 visa applications, Medicaid, SNAP benefits, and tax returns. What specific form are you working on? I can provide detailed guidance and help you understand the requirements."
+        }
+    }
+}
+
+struct ScanFormView: View {
+    @State private var showingImagePicker = false
+    @State private var showingCamera = false
+    @State private var scannedImage: UIImage?
+    @State private var extractedText = ""
+    @State private var isProcessing = false
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                if let scannedImage = scannedImage {
+                    // Show scanned image and extracted text
+                    VStack(spacing: 16) {
+                        Image(uiImage: scannedImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(maxHeight: 300)
+                            .cornerRadius(12)
+                        
+                        if isProcessing {
+                            ProgressView("Processing image...")
+                                .padding()
+                        } else if !extractedText.isEmpty {
+                            ScrollView {
+                                Text(extractedText)
+                                    .padding()
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(8)
+                            }
+                            .frame(maxHeight: 200)
+                        }
+                        
+                        HStack(spacing: 16) {
+                            Button("Scan New") {
+                                showingCamera = true
+                            }
+                            .buttonStyle(.bordered)
+                            
+                            Button("Use Text") {
+                                // TODO: Use extracted text to fill form
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(extractedText.isEmpty)
+                        }
+                    }
+                } else {
+                    // Show scan options
+                    VStack(spacing: 24) {
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 80))
+                            .foregroundColor(.blue)
+                        
+                        Text("Scan Form")
+                            .font(.title)
+                            .fontWeight(.bold)
+                        
+                        Text("Take a photo of any form to extract text and auto-fill information")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                        
+                        VStack(spacing: 12) {
+                            Button(action: {
+                                showingCamera = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "camera.fill")
+                                    Text("Take Photo")
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(12)
+                            }
+                            
+                            Button(action: {
+                                showingImagePicker = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "photo.fill")
+                                    Text("Choose from Library")
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.gray)
+                                .foregroundColor(.white)
+                                .cornerRadius(12)
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                }
+            }
+            .navigationTitle("Scan Form")
+            .sheet(isPresented: $showingCamera) {
+                CameraView(image: $scannedImage)
+            }
+            .sheet(isPresented: $showingImagePicker) {
+                ImagePicker(image: $scannedImage)
+            }
+            .onChange(of: scannedImage) { _ in
+                if scannedImage != nil {
+                    processImage()
+                }
+            }
+        }
+    }
+    
+    private func processImage() {
+        guard let image = scannedImage else { return }
+        
+        isProcessing = true
+        extractedText = ""
+        
+        // Simulate OCR processing
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            // In a real app, this would use Vision framework for OCR
+            extractedText = "Sample extracted text from form:\n\nName: John Doe\nDate of Birth: 01/15/1985\nAddress: 123 Main Street\nCity: Anytown, ST 12345\n\nThis is a sample of text that would be extracted from the scanned form using OCR technology."
+            isProcessing = false
+        }
+    }
+}
+
+struct CameraView: UIViewControllerRepresentable {
+    @Binding var image: UIImage?
+    @Environment(\.dismiss) private var dismiss
+    
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.delegate = context.coordinator
+        picker.sourceType = .camera
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: CameraView
+        
+        init(_ parent: CameraView) {
+            self.parent = parent
+        }
+        
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+            if let image = info[.originalImage] as? UIImage {
+                parent.image = image
+            }
+            parent.dismiss()
+        }
+        
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.dismiss()
+        }
+    }
+}
+
+struct ImagePicker: UIViewControllerRepresentable {
+    @Binding var image: UIImage?
+    @Environment(\.dismiss) private var dismiss
+    
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.delegate = context.coordinator
+        picker.sourceType = .photoLibrary
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: ImagePicker
+        
+        init(_ parent: ImagePicker) {
+            self.parent = parent
+        }
+        
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+            if let image = info[.originalImage] as? UIImage {
+                parent.image = image
+            }
+            parent.dismiss()
+        }
+        
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.dismiss()
+        }
+    }
+}
+
+struct DocumentsView: View {
+    @State private var documents: [Document] = [
+        Document(name: "DMV License Renewal", type: "Form", date: "2024-01-15", status: "Completed"),
+        Document(name: "SNAP Benefits Application", type: "Form", date: "2024-01-10", status: "In Progress"),
+        Document(name: "Tax Return 2023", type: "Form", date: "2024-01-05", status: "Draft"),
+        Document(name: "Passport Scan", type: "Document", date: "2024-01-03", status: "Uploaded"),
+        Document(name: "Utility Bill", type: "Document", date: "2024-01-02", status: "Uploaded")
+    ]
+    
+    var body: some View {
+        NavigationView {
+            List {
+                ForEach(documents) { document in
+                    DocumentRow(document: document)
+                }
+                .onDelete(perform: deleteDocuments)
+            }
+            .navigationTitle("Documents")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Add") {
+                        // TODO: Add document functionality
+                    }
+                }
+            }
+        }
+    }
+    
+    private func deleteDocuments(offsets: IndexSet) {
+        documents.remove(atOffsets: offsets)
+    }
+}
+
+struct Document: Identifiable {
+    let id = UUID()
+    let name: String
+    let type: String
+    let date: String
+    let status: String
+}
+
+struct DocumentRow: View {
+    let document: Document
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            Image(systemName: document.type == "Form" ? "doc.text.fill" : "doc.fill")
+                .font(.title2)
+                .foregroundColor(.blue)
+                .frame(width: 40, height: 40)
+                .background(Color.blue.opacity(0.1))
+                .clipShape(Circle())
+            
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
+                Text(document.name)
                     .font(.headline)
                     .fontWeight(.medium)
-                    .foregroundColor(.primary)
                 
-                Text(date)
+                Text(document.type)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Text(document.date)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
             
             Spacer()
             
-            Text(status)
+            Text(document.status)
                 .font(.caption)
                 .fontWeight(.medium)
                 .foregroundColor(.white)
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(statusColor)
-                .cornerRadius(12)
+                .cornerRadius(8)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(Color.white)
-        .cornerRadius(12)
-        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+        .padding(.vertical, 4)
     }
-}
-
-// Placeholder Views for other tabs
-struct AIAssistantView: View {
-    var body: some View {
-        NavigationView {
-            VStack {
-                Image(systemName: "message.fill")
-                    .font(.system(size: 60))
-                    .foregroundColor(.purple)
-                Text("AI Assistant")
-                    .font(.title)
-                    .fontWeight(.bold)
-                Text("Get AI help with your forms")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-            .navigationTitle("AI Assistant")
-        }
-    }
-}
-
-struct ScanFormView: View {
-    var body: some View {
-        NavigationView {
-            VStack {
-                Image(systemName: "camera.fill")
-                    .font(.system(size: 60))
-                    .foregroundColor(.blue)
-                Text("Scan Form")
-                    .font(.title)
-                    .fontWeight(.bold)
-                Text("Take a photo of any form")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-            .navigationTitle("Scan Form")
-        }
-    }
-}
-
-struct DocumentsView: View {
-    var body: some View {
-        NavigationView {
-            VStack {
-                Image(systemName: "folder.fill")
-                    .font(.system(size: 60))
-                    .foregroundColor(.orange)
-                Text("Documents")
-                    .font(.title)
-                    .fontWeight(.bold)
-                Text("Manage your documents")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-            .navigationTitle("Documents")
+    
+    private var statusColor: Color {
+        switch document.status {
+        case "Completed":
+            return .green
+        case "In Progress":
+            return .blue
+        case "Draft":
+            return .orange
+        case "Uploaded":
+            return .purple
+        default:
+            return .gray
         }
     }
 }
 
 struct FormTemplatesView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedTemplate: FormTemplate?
+    
+    let templates = [
+        FormTemplate(
+            id: "dmv-renewal",
+            name: "DMV License Renewal",
+            description: "Complete your driver's license renewal with conversational assistance",
+            icon: "car.fill",
+            color: .blue,
+            estimatedTime: "15 minutes"
+        ),
+        FormTemplate(
+            id: "ds-160",
+            name: "DS-160 Visa Application",
+            description: "Complete your nonimmigrant visa application with step-by-step guidance",
+            icon: "airplane",
+            color: .purple,
+            estimatedTime: "45 minutes"
+        ),
+        FormTemplate(
+            id: "medicaid",
+            name: "Medicaid Application",
+            description: "Apply for Medicaid health coverage assistance",
+            icon: "heart.fill",
+            color: .green,
+            estimatedTime: "20 minutes"
+        ),
+        FormTemplate(
+            id: "snap",
+            name: "SNAP Benefits Form",
+            description: "Apply for Supplemental Nutrition Assistance Program",
+            icon: "cart.fill",
+            color: .orange,
+            estimatedTime: "25 minutes"
+        ),
+        FormTemplate(
+            id: "tax-return",
+            name: "Tax Return Form",
+            description: "Complete your annual tax return with AI assistance",
+            icon: "dollarsign.circle.fill",
+            color: .red,
+            estimatedTime: "30 minutes"
+        )
+    ]
+    
     var body: some View {
         NavigationView {
-            VStack {
-                Image(systemName: "doc.text.fill")
-                    .font(.system(size: 60))
-                    .foregroundColor(.green)
-                Text("Form Templates")
-                    .font(.title)
-                    .fontWeight(.bold)
-                Text("Pre-built form templates")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+            List {
+                ForEach(templates) { template in
+                    FormTemplateRow(template: template) {
+                        selectedTemplate = template
+                    }
+                }
             }
             .navigationTitle("Form Templates")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .sheet(item: $selectedTemplate) { template in
+            FormFillingView(template: template)
+        }
+    }
+}
+
+struct FormTemplate: Identifiable {
+    let id: String
+    let name: String
+    let description: String
+    let icon: String
+    let color: Color
+    let estimatedTime: String
+}
+
+struct FormTemplateRow: View {
+    let template: FormTemplate
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                Image(systemName: template.icon)
+                    .font(.title2)
+                    .foregroundColor(.white)
+                    .frame(width: 40, height: 40)
+                    .background(template.color)
+                    .clipShape(Circle())
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(template.name)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                    
+                    Text(template.description)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
+                    
+                    HStack {
+                        Image(systemName: "clock")
+                            .font(.caption)
+                        Text(template.estimatedTime)
+                            .font(.caption)
+                    }
+                    .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .padding(.vertical, 8)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct FormFillingView: View {
+    let template: FormTemplate
+    @Environment(\.dismiss) private var dismiss
+    @State private var currentStep = 0
+    @State private var formData: [String: String] = [:]
+    @State private var messages: [FormMessage] = []
+    @State private var inputText = ""
+    @State private var isLoading = false
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // Progress header
+                progressHeader
+                
+                // Messages area
+                messagesArea
+                
+                // Input area
+                inputArea
+            }
+            .navigationTitle(template.name)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Save") {
+                        saveForm()
+                    }
+                    .disabled(formData.isEmpty)
+                }
+            }
+        }
+        .onAppear {
+            startForm()
+        }
+    }
+    
+    private var progressHeader: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Text("Step \(currentStep + 1) of \(getTotalSteps())")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Spacer()
+                Text("\(Int((Double(currentStep + 1) / Double(getTotalSteps())) * 100))%")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.blue)
+            }
+            
+            ProgressView(value: Double(currentStep + 1), total: Double(getTotalSteps()))
+                .progressViewStyle(LinearProgressViewStyle(tint: .blue))
+        }
+        .padding(.horizontal)
+        .padding(.top, 8)
+        .background(Color(.systemGroupedBackground))
+    }
+    
+    private var messagesArea: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 12) {
+                    ForEach(messages) { message in
+                        FormMessageBubble(message: message)
+                    }
+                    
+                    if isLoading {
+                        HStack {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                            Text("Processing...")
+                                .foregroundColor(.secondary)
+                        }
+                        .padding()
+                    }
+                }
+                .padding()
+            }
+            .onChange(of: messages.count) { _ in
+                withAnimation {
+                    proxy.scrollTo(messages.last?.id, anchor: .bottom)
+                }
+            }
+        }
+    }
+    
+    private var inputArea: some View {
+        HStack(spacing: 12) {
+            TextField("Type your answer...", text: $inputText)
+                .textFieldStyle(.roundedBorder)
+                .disabled(isLoading)
+            
+            Button("Send") {
+                sendMessage()
+            }
+            .disabled(inputText.isEmpty || isLoading)
+            .buttonStyle(.borderedProminent)
+        }
+        .padding()
+        .background(Color(.systemGroupedBackground))
+    }
+    
+    private func startForm() {
+        let welcomeMessage = FormMessage(
+            id: UUID(),
+            role: .assistant,
+            content: "Hello! I'm here to help you complete your \(template.name.lowercased()). Let's get started with the first question.",
+            timestamp: Date()
+        )
+        messages.append(welcomeMessage)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            askNextQuestion()
+        }
+    }
+    
+    private func askNextQuestion() {
+        let questions = getQuestionsForTemplate()
+        guard currentStep < questions.count else {
+            completeForm()
+            return
+        }
+        
+        let question = questions[currentStep]
+        let questionMessage = FormMessage(
+            id: UUID(),
+            role: .assistant,
+            content: question.text,
+            timestamp: Date()
+        )
+        messages.append(questionMessage)
+    }
+    
+    private func sendMessage() {
+        guard !inputText.isEmpty else { return }
+        
+        let userMessage = FormMessage(
+            id: UUID(),
+            role: .user,
+            content: inputText,
+            timestamp: Date()
+        )
+        messages.append(userMessage)
+        
+        let userInput = inputText
+        inputText = ""
+        isLoading = true
+        
+        // Store the answer
+        let questions = getQuestionsForTemplate()
+        if currentStep < questions.count {
+            formData[questions[currentStep].field] = userInput
+        }
+        
+        // Simulate AI processing
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            isLoading = false
+            currentStep += 1
+            
+            if currentStep < questions.count {
+                askNextQuestion()
+            } else {
+                completeForm()
+            }
+        }
+    }
+    
+    private func completeForm() {
+        let completionMessage = FormMessage(
+            id: UUID(),
+            role: .assistant,
+            content: "Great! I've collected all the information for your \(template.name.lowercased()). Your form is now complete and ready to submit.",
+            timestamp: Date()
+        )
+        messages.append(completionMessage)
+    }
+    
+    private func saveForm() {
+        // In a real app, this would save to Core Data
+        print("Saving form data: \(formData)")
+        dismiss()
+    }
+    
+    private func getTotalSteps() -> Int {
+        return getQuestionsForTemplate().count
+    }
+    
+    private func getQuestionsForTemplate() -> [FormQuestion] {
+        switch template.id {
+        case "dmv-renewal":
+            return [
+                FormQuestion(field: "fullName", text: "What is your full legal name as it appears on your current license?"),
+                FormQuestion(field: "dateOfBirth", text: "What is your date of birth?"),
+                FormQuestion(field: "licenseNumber", text: "What is your current driver's license number?"),
+                FormQuestion(field: "address", text: "What is your current residential address?"),
+                FormQuestion(field: "state", text: "Which state are you renewing your license in?")
+            ]
+        case "ds-160":
+            return [
+                FormQuestion(field: "fullName", text: "What is your full name as it appears on your passport?"),
+                FormQuestion(field: "dateOfBirth", text: "What is your date of birth?"),
+                FormQuestion(field: "passportNumber", text: "What is your passport number?"),
+                FormQuestion(field: "purpose", text: "What is the primary purpose of your visit to the United States?"),
+                FormQuestion(field: "duration", text: "How long do you plan to stay in the United States?")
+            ]
+        case "medicaid":
+            return [
+                FormQuestion(field: "fullName", text: "What is your full legal name?"),
+                FormQuestion(field: "dateOfBirth", text: "What is your date of birth?"),
+                FormQuestion(field: "income", text: "What is your monthly household income?"),
+                FormQuestion(field: "householdSize", text: "How many people are in your household?"),
+                FormQuestion(field: "address", text: "What is your current address?")
+            ]
+        case "snap":
+            return [
+                FormQuestion(field: "fullName", text: "What is your full legal name?"),
+                FormQuestion(field: "dateOfBirth", text: "What is your date of birth?"),
+                FormQuestion(field: "income", text: "What is your monthly household income?"),
+                FormQuestion(field: "expenses", text: "What are your monthly housing expenses?"),
+                FormQuestion(field: "address", text: "What is your current address?")
+            ]
+        case "tax-return":
+            return [
+                FormQuestion(field: "fullName", text: "What is your full legal name?"),
+                FormQuestion(field: "ssn", text: "What is your Social Security Number?"),
+                FormQuestion(field: "income", text: "What was your total income for the tax year?"),
+                FormQuestion(field: "deductions", text: "What were your total deductions?"),
+                FormQuestion(field: "filingStatus", text: "What is your filing status?")
+            ]
+        default:
+            return []
+        }
+    }
+}
+
+struct FormQuestion {
+    let field: String
+    let text: String
+}
+
+struct FormMessage: Identifiable {
+    let id: UUID
+    let role: MessageRole
+    let content: String
+    let timestamp: Date
+}
+
+enum MessageRole {
+    case user
+    case assistant
+}
+
+struct FormMessageBubble: View {
+    let message: FormMessage
+    
+    var body: some View {
+        HStack {
+            if message.role == .user {
+                Spacer()
+            }
+            
+            VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 4) {
+                Text(message.content)
+                    .padding()
+                    .background(message.role == .user ? Color.blue : Color(.systemGray5))
+                    .foregroundColor(message.role == .user ? .white : .primary)
+                    .cornerRadius(16)
+                
+                Text(message.timestamp, style: .time)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            
+            if message.role == .assistant {
+                Spacer()
+            }
+        }
+    }
+}
+
+struct MoreView: View {
+    var body: some View {
+        NavigationView {
+            List {
+                Section("Form Templates") {
+                    NavigationLink("All Templates") {
+                        FormTemplatesView()
+                    }
+                }
+                
+                Section("Settings") {
+                    NavigationLink("Preferences") {
+                        SettingsView()
+                    }
+                    NavigationLink("Privacy") {
+                        Text("Privacy Settings")
+                            .navigationTitle("Privacy")
+                    }
+                    NavigationLink("About") {
+                        Text("About Formly AI")
+                            .navigationTitle("About")
+                    }
+                }
+            }
+            .navigationTitle("More")
         }
     }
 }
@@ -350,16 +1147,33 @@ struct FormTemplatesView: View {
 struct SettingsView: View {
     var body: some View {
         NavigationView {
-            VStack {
-                Image(systemName: "gear")
-                    .font(.system(size: 60))
-                    .foregroundColor(.gray)
-                Text("Settings")
-                    .font(.title)
-                    .fontWeight(.bold)
-                Text("Configure your preferences")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+            List {
+                Section("Backup & Restore") {
+                    Button("Create Backup") {
+                        // TODO: Implement backup
+                    }
+                    Button("Restore from Backup") {
+                        // TODO: Implement restore
+                    }
+                }
+                
+                Section("Privacy") {
+                    Button("Export All Data") {
+                        // TODO: Implement export
+                    }
+                    Button("Delete All Data") {
+                        // TODO: Implement delete
+                    }
+                }
+                
+                Section("About") {
+                    HStack {
+                        Text("Version")
+                        Spacer()
+                        Text("1.0.0")
+                            .foregroundColor(.secondary)
+                    }
+                }
             }
             .navigationTitle("Settings")
         }
