@@ -958,28 +958,44 @@ struct FormFillingView: View {
     }
     
     private var messagesArea: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(spacing: 12) {
-                    ForEach(messages) { message in
-                        FormMessageBubble(message: message)
-                    }
-                    
-                    if isLoading {
-                        HStack {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                            Text("Processing...")
-                                .foregroundColor(.secondary)
+        ZStack {
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        ForEach(messages) { message in
+                            FormMessageBubble(message: message)
                         }
-                        .padding()
+                        
+                        if isLoading {
+                            HStack {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                Text("Processing...")
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding()
+                        }
+                    }
+                    .padding()
+                    .padding(.bottom, 80) // Add padding for floating form button
+                }
+                .onChange(of: messages.count) { _ in
+                    withAnimation {
+                        proxy.scrollTo(messages.last?.id, anchor: .bottom)
                     }
                 }
-                .padding()
             }
-            .onChange(of: messages.count) { _ in
-                withAnimation {
-                    proxy.scrollTo(messages.last?.id, anchor: .bottom)
+            
+            // Floating form button
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    FloatingFormButton {
+                        entryMode = .structured
+                    }
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 20)
                 }
             }
         }
@@ -1002,23 +1018,39 @@ struct FormFillingView: View {
     }
     
     private var structuredFormView: some View {
-        ScrollView {
-            LazyVStack(spacing: 16) {
-                ForEach(Array(getQuestionsForTemplate().enumerated()), id: \.offset) { index, question in
-                    StructuredFormField(
-                        question: question,
-                        value: Binding(
-                            get: { formData[question.field] ?? "" },
-                            set: { formData[question.field] = $0 }
-                        ),
-                        isCompleted: !(formData[question.field] ?? "").isEmpty,
-                        isCurrentStep: index == currentStep
-                    )
+        ZStack {
+            ScrollView {
+                LazyVStack(spacing: 16) {
+                    ForEach(Array(getQuestionsForTemplate().enumerated()), id: \.offset) { index, question in
+                        StructuredFormField(
+                            question: question,
+                            value: Binding(
+                                get: { formData[question.field] ?? "" },
+                                set: { formData[question.field] = $0 }
+                            ),
+                            isCompleted: !(formData[question.field] ?? "").isEmpty,
+                            isCurrentStep: index == currentStep
+                        )
+                    }
+                }
+                .padding()
+                .padding(.bottom, 80) // Add padding for floating chat bubble
+            }
+            .background(Color(.systemGroupedBackground))
+            
+            // Floating chat bubble
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    FloatingChatBubble {
+                        entryMode = .conversational
+                    }
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 20)
                 }
             }
-            .padding()
         }
-        .background(Color(.systemGroupedBackground))
     }
     
     private func startForm() {
@@ -1387,6 +1419,76 @@ struct StructuredFormField: View {
                 .stroke(isCurrentStep ? Color.blue : Color.clear, lineWidth: 2)
         )
         .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+    }
+}
+
+struct FloatingChatBubble: View {
+    let action: () -> Void
+    @State private var isPressed = false
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: "message.fill")
+                    .font(.system(size: 16, weight: .medium))
+                
+                Text("Need help?")
+                    .font(.system(size: 14, weight: .medium))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.blue, Color.purple]),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .clipShape(Capsule())
+            .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
+            .scaleEffect(isPressed ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: isPressed)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
+            isPressed = pressing
+        }, perform: {})
+    }
+}
+
+struct FloatingFormButton: View {
+    let action: () -> Void
+    @State private var isPressed = false
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: "doc.text.fill")
+                    .font(.system(size: 16, weight: .medium))
+                
+                Text("Fill form")
+                    .font(.system(size: 14, weight: .medium))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.green, Color.blue]),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .clipShape(Capsule())
+            .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
+            .scaleEffect(isPressed ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: isPressed)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
+            isPressed = pressing
+        }, perform: {})
     }
 }
 
