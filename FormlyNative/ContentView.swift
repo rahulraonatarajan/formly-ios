@@ -840,6 +840,7 @@ struct FormFillingView: View {
     @State private var isLoading = false
     @State private var showingFormPreview = false
     @State private var entryMode: EntryMode = .structured
+    @State private var showingMiniChat = false
     
     enum EntryMode {
         case conversational
@@ -1044,11 +1045,20 @@ struct FormFillingView: View {
                 HStack {
                     Spacer()
                     FloatingChatBubble {
-                        entryMode = .conversational
+                        showingMiniChat = true
                     }
                     .padding(.trailing, 20)
                     .padding(.bottom, 20)
                 }
+            }
+            
+            // Mini chat overlay
+            if showingMiniChat {
+                MiniChatOverlay(
+                    template: template,
+                    formData: $formData,
+                    isVisible: $showingMiniChat
+                )
             }
         }
     }
@@ -1553,6 +1563,244 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+        }
+    }
+}
+
+struct MiniChatOverlay: View {
+    let template: FormTemplate
+    @Binding var formData: [String: String]
+    @Binding var isVisible: Bool
+    
+    @State private var messages: [FormMessage] = []
+    @State private var inputText = ""
+    @State private var isLoading = false
+    
+    var body: some View {
+        ZStack {
+            // Semi-transparent background
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        isVisible = false
+                    }
+                }
+            
+            // Chat overlay
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Text("AI Assistant")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            isVisible = false
+                        }
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                }
+                .padding()
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.blue, Color.purple]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                
+                // Messages area
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            if messages.isEmpty {
+                                VStack(spacing: 16) {
+                                    Image(systemName: "message.circle.fill")
+                                        .font(.system(size: 48))
+                                        .foregroundColor(.blue)
+                                    
+                                    Text("How can I help you fill out this form?")
+                                        .font(.headline)
+                                        .multilineTextAlignment(.center)
+                                    
+                                    Text("Ask me anything about the form or let me help you fill specific sections.")
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                        .multilineTextAlignment(.center)
+                                }
+                                .padding(.top, 40)
+                            }
+                            
+                            ForEach(messages) { message in
+                                MiniChatBubble(message: message)
+                            }
+                            
+                            if isLoading {
+                                HStack {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                    Text("Processing...")
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding()
+                            }
+                        }
+                        .padding()
+                    }
+                    .onChange(of: messages.count) { _ in
+                        withAnimation {
+                            proxy.scrollTo(messages.last?.id, anchor: .bottom)
+                        }
+                    }
+                }
+                .frame(maxHeight: 300)
+                
+                // Input area
+                HStack(spacing: 12) {
+                    TextField("Ask a question...", text: $inputText)
+                        .textFieldStyle(.roundedBorder)
+                        .disabled(isLoading)
+                    
+                    Button("Send") {
+                        sendMessage()
+                    }
+                    .disabled(inputText.isEmpty || isLoading)
+                    .buttonStyle(.borderedProminent)
+                }
+                .padding()
+                .background(Color(.systemGroupedBackground))
+            }
+            .background(Color(.systemBackground))
+            .cornerRadius(16)
+            .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 100)
+        }
+        .onAppear {
+            if messages.isEmpty {
+                let welcomeMessage = FormMessage(
+                    id: UUID(),
+                    role: .assistant,
+                    content: "Hi! I can help you fill out your \(template.name.lowercased()). What would you like to know?",
+                    timestamp: Date()
+                )
+                messages.append(welcomeMessage)
+            }
+        }
+    }
+    
+    private func sendMessage() {
+        guard !inputText.isEmpty else { return }
+        
+        let userMessage = FormMessage(
+            id: UUID(),
+            role: .user,
+            content: inputText,
+            timestamp: Date()
+        )
+        messages.append(userMessage)
+        
+        let userInput = inputText
+        inputText = ""
+        isLoading = true
+        
+        // Simulate AI processing and auto-fill
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            isLoading = false
+            
+            // Analyze user input and auto-fill relevant fields
+            let response = generateAIResponse(for: userInput)
+            let aiMessage = FormMessage(
+                id: UUID(),
+                role: .assistant,
+                content: response.message,
+                timestamp: Date()
+            )
+            messages.append(aiMessage)
+            
+            // Auto-fill fields if detected
+            for (field, value) in response.autoFilledFields {
+                formData[field] = value
+            }
+        }
+    }
+    
+    private func generateAIResponse(for input: String) -> (message: String, autoFilledFields: [String: String]) {
+        let lowercasedInput = input.lowercased()
+        var autoFilledFields: [String: String] = [:]
+        var response = ""
+        
+        // Simple keyword-based auto-fill logic
+        if lowercasedInput.contains("name") || lowercasedInput.contains("full name") {
+            if template.name.contains("DMV") {
+                autoFilledFields["fullName"] = "John Doe"
+                response = "I've filled in your name as 'John Doe'. You can edit it if needed."
+            } else if template.name.contains("DS-160") {
+                autoFilledFields["fullName"] = "John Doe"
+                response = "I've filled in your full name as 'John Doe'. Please verify this is correct."
+            }
+        } else if lowercasedInput.contains("address") || lowercasedInput.contains("street") {
+            autoFilledFields["address"] = "123 Main Street"
+            autoFilledFields["city"] = "New York"
+            autoFilledFields["state"] = "NY"
+            autoFilledFields["zipCode"] = "10001"
+            response = "I've filled in a sample address. Please update it with your actual address."
+        } else if lowercasedInput.contains("phone") || lowercasedInput.contains("number") {
+            autoFilledFields["phoneNumber"] = "(555) 123-4567"
+            response = "I've filled in a sample phone number. Please replace it with your actual number."
+        } else if lowercasedInput.contains("email") {
+            autoFilledFields["email"] = "john.doe@example.com"
+            response = "I've filled in a sample email address. Please update it with your actual email."
+        } else if lowercasedInput.contains("date of birth") || lowercasedInput.contains("birthday") {
+            autoFilledFields["dateOfBirth"] = "01/15/1990"
+            response = "I've filled in a sample date of birth. Please update it with your actual date of birth."
+        } else if lowercasedInput.contains("license") || lowercasedInput.contains("driver") {
+            if template.name.contains("DMV") {
+                autoFilledFields["licenseNumber"] = "DL123456789"
+                response = "I've filled in a sample driver's license number. Please replace it with your actual license number."
+            }
+        } else if lowercasedInput.contains("passport") {
+            if template.name.contains("DS-160") {
+                autoFilledFields["passportNumber"] = "P123456789"
+                response = "I've filled in a sample passport number. Please replace it with your actual passport number."
+            }
+        } else {
+            response = "I can help you fill out specific fields. Try asking about your name, address, phone number, email, date of birth, or other form-specific information."
+        }
+        
+        return (response, autoFilledFields)
+    }
+}
+
+struct MiniChatBubble: View {
+    let message: FormMessage
+    
+    var body: some View {
+        HStack {
+            if message.role == .user {
+                Spacer()
+                Text(message.content)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
+            } else {
+                Text(message.content)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color(.systemGray5))
+                    .foregroundColor(.primary)
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
+                Spacer()
+            }
         }
     }
 }
