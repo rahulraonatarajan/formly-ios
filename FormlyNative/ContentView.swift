@@ -1740,9 +1740,9 @@ struct MiniChatOverlay: View {
     
     private func generateContextualWelcomeMessage(currentQuestion: FormQuestion?) -> String {
         if let question = currentQuestion {
-            return "Hi! I can help you with the current field: '\(question.text)'. I can also help you with other form fields, gather required documents, or answer any questions about the \(template.name.lowercased()). What would you like assistance with?"
+            return "Need help with '\(question.text)'? Ask me anything about this field or the form."
         } else {
-            return "Hi! I can help you fill out your \(template.name.lowercased()). I can assist with form fields, gather required documents, or answer any questions. What would you like to know?"
+            return "Hi! I can help you with any form field or questions about \(template.name.lowercased())."
         }
     }
     
@@ -1809,7 +1809,7 @@ struct MiniChatOverlay: View {
                 response = "I've filled in a sample passport number. Please replace it with your actual passport number."
             }
         } else {
-            response = "I can help you with the current field, fill out other form fields, gather required documents, or answer questions about the form. What would you like assistance with?"
+            response = "I can help with this field, other form fields, or document requirements. What do you need?"
         }
         
         return (response, autoFilledFields)
@@ -1819,31 +1819,31 @@ struct MiniChatOverlay: View {
         let fieldName = question.field.lowercased()
         
         if fieldName.contains("name") {
-            return "For the name field, please provide your full legal name as it appears on your government-issued ID. Make sure to include your first, middle (if applicable), and last name."
+            return "Enter your full legal name exactly as it appears on your government-issued ID (first, middle, last)."
         } else if fieldName.contains("address") {
-            return "For the address field, please provide your current residential address. Include the street number, street name, apartment/unit number (if applicable), city, state, and ZIP code."
+            return "Enter your current residential address: street number, name, apartment/unit, city, state, ZIP."
         } else if fieldName.contains("phone") {
-            return "For the phone number field, please provide your primary contact number. Include the area code and ensure it's a number where you can be reached during business hours."
+            return "Enter your primary contact number with area code (reachable during business hours)."
         } else if fieldName.contains("email") {
-            return "For the email field, please provide a valid email address that you check regularly. This will be used for important communications about your application."
+            return "Enter a valid email address you check regularly for important communications."
         } else if fieldName.contains("date") || fieldName.contains("birth") {
-            return "For the date of birth field, please provide your birth date in MM/DD/YYYY format. Make sure this matches your government-issued identification."
+            return "Enter your birth date in MM/DD/YYYY format (must match your government ID)."
         } else if fieldName.contains("license") {
-            return "For the driver's license number field, please provide your current driver's license number exactly as it appears on your license card."
+            return "Enter your current driver's license number exactly as shown on your license card."
         } else if fieldName.contains("passport") {
-            return "For the passport number field, please provide your passport number exactly as it appears on your passport. This is typically a 9-digit number."
+            return "Enter your passport number exactly as shown on your passport (typically 9 digits)."
         } else {
-            return "For this field, please provide accurate and complete information. If you're unsure about any details, I can help you gather the required information or documents."
+            return "Enter accurate and complete information for this field. Need help gathering documents?"
         }
     }
     
     private func generateDocumentRequirementsMessage() -> String {
         if template.name.contains("DMV") {
-            return "For DMV License Renewal, you'll need:\n• Current driver's license\n• Proof of identity (birth certificate, passport)\n• Proof of residency (utility bill, lease agreement)\n• Payment method (credit card, check, or cash)\n• Vision test results (if required)\n• Medical certificate (if applicable)"
+            return "Required for DMV renewal:\n• Current driver's license\n• Proof of identity (birth certificate, passport)\n• Proof of residency (utility bill, lease)\n• Payment method\n• Vision test results (if required)"
         } else if template.name.contains("DS-160") {
-            return "For DS-160 Visa Application, you'll need:\n• Valid passport\n• Recent passport photo\n• Travel itinerary\n• Previous visa information (if applicable)\n• Employment/education history\n• Family information\n• Financial support documentation"
+            return "Required for DS-160:\n• Valid passport\n• Recent passport photo\n• Travel itinerary\n• Employment/education history\n• Family information\n• Financial support docs"
         } else {
-            return "Required documents typically include:\n• Government-issued photo ID\n• Proof of address\n• Supporting documentation for specific fields\n• Payment method\n\nWould you like me to help you gather any specific documents?"
+            return "Required documents:\n• Government-issued photo ID\n• Proof of address\n• Supporting documentation\n• Payment method"
         }
     }
     
@@ -1854,7 +1854,7 @@ struct MiniChatOverlay: View {
         }.count
         let progressPercentage = totalQuestions > 0 ? Int((Double(completedQuestions) / Double(totalQuestions)) * 100) : 0
         
-        return "You've completed \(completedQuestions) out of \(totalQuestions) fields (\(progressPercentage)%). You're currently on field \(currentStep + 1): '\(currentStep < questions.count ? questions[currentStep].text : "Unknown")'. Keep going!"
+        return "\(completedQuestions)/\(totalQuestions) fields completed (\(progressPercentage)%). Currently on field \(currentStep + 1)."
     }
 }
 
