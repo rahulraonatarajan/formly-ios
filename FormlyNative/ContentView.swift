@@ -1042,15 +1042,17 @@ struct FormFillingView: View {
                 .background(Color(.systemGroupedBackground))
                 .onChange(of: currentStep) { newStep in
                     // Auto-scroll to current field with animation
-                    withAnimation(.easeInOut(duration: 0.8)) {
-                        proxy.scrollTo("field_\(newStep)", anchor: .top)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        withAnimation(.easeInOut(duration: 0.8)) {
+                            proxy.scrollTo("field_\(newStep)", anchor: .top)
+                        }
                     }
                 }
                 .onChange(of: formData) { _ in
                     // Auto-scroll to next field when current field is completed
                     let nextStep = currentStep + 1
                     if nextStep < getQuestionsForTemplate().count {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                             withAnimation(.easeInOut(duration: 0.8)) {
                                 proxy.scrollTo("field_\(nextStep)", anchor: .top)
                             }
@@ -1135,29 +1137,53 @@ struct FormFillingView: View {
         inputText = ""
         isLoading = true
         
-        // Store the answer and auto-fill the current field
+        // Validate the current field
         let questions = getQuestionsForTemplate()
         if currentStep < questions.count {
-            formData[questions[currentStep].field] = userInput
-        }
-        
-        // Simulate AI processing
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            isLoading = false
-            currentStep += 1
+            let currentQuestion = questions[currentStep]
+            let validationResult = currentQuestion.validate(userInput)
             
-            if currentStep < questions.count {
-                // Ask next question automatically
-                let nextQuestion = questions[currentStep]
-                let nextQuestionMessage = FormMessage(
-                    id: UUID(),
-                    role: .assistant,
-                    content: "Great! Now for the next field: '\(nextQuestion.text)'",
-                    timestamp: Date()
-                )
-                messages.append(nextQuestionMessage)
+            if validationResult.isValid {
+                // Store the valid answer
+                formData[currentQuestion.field] = userInput
+                
+                // Simulate AI processing
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    isLoading = false
+                    currentStep += 1
+                    
+                    if currentStep < questions.count {
+                        // Ask next question automatically
+                        let nextQuestion = questions[currentStep]
+                        let nextQuestionMessage = FormMessage(
+                            id: UUID(),
+                            role: .assistant,
+                            content: "Great! Now for the next field: '\(nextQuestion.text)'",
+                            timestamp: Date()
+                        )
+                        messages.append(nextQuestionMessage)
+                    } else {
+                        completeForm()
+                    }
+                }
             } else {
-                completeForm()
+                // Handle validation error
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    isLoading = false
+                    
+                    var errorMessage = validationResult.message ?? "Please provide a valid answer."
+                    if let suggestions = validationResult.suggestions, !suggestions.isEmpty {
+                        errorMessage += "\n\nExamples: \(suggestions.joined(separator: ", "))"
+                    }
+                    
+                    let errorResponse = FormMessage(
+                        id: UUID(),
+                        role: .assistant,
+                        content: errorMessage,
+                        timestamp: Date()
+                    )
+                    messages.append(errorResponse)
+                }
             }
         }
     }
@@ -1195,43 +1221,43 @@ struct FormFillingView: View {
         switch template.id {
         case "dmv-renewal":
             return [
-                FormQuestion(field: "fullName", text: "What is your full legal name as it appears on your current license?"),
-                FormQuestion(field: "dateOfBirth", text: "What is your date of birth?"),
-                FormQuestion(field: "licenseNumber", text: "What is your current driver's license number?"),
-                FormQuestion(field: "address", text: "What is your current residential address?"),
-                FormQuestion(field: "state", text: "Which state are you renewing your license in?")
+                FormQuestion(field: "fullName", text: "What is your full legal name as it appears on your current license?", dataType: .name, validationRules: [.required]),
+                FormQuestion(field: "dateOfBirth", text: "What is your date of birth?", dataType: .date, validationRules: [.required]),
+                FormQuestion(field: "licenseNumber", text: "What is your current driver's license number?", dataType: .licenseNumber, validationRules: [.required]),
+                FormQuestion(field: "address", text: "What is your current residential address?", dataType: .address, validationRules: [.required]),
+                FormQuestion(field: "state", text: "Which state are you renewing your license in?", dataType: .state, validationRules: [.required])
             ]
         case "ds-160":
             return [
-                FormQuestion(field: "fullName", text: "What is your full name as it appears on your passport?"),
-                FormQuestion(field: "dateOfBirth", text: "What is your date of birth?"),
-                FormQuestion(field: "passportNumber", text: "What is your passport number?"),
-                FormQuestion(field: "purpose", text: "What is the primary purpose of your visit to the United States?"),
-                FormQuestion(field: "duration", text: "How long do you plan to stay in the United States?")
+                FormQuestion(field: "fullName", text: "What is your full name as it appears on your passport?", dataType: .name, validationRules: [.required]),
+                FormQuestion(field: "dateOfBirth", text: "What is your date of birth?", dataType: .date, validationRules: [.required]),
+                FormQuestion(field: "passportNumber", text: "What is your passport number?", dataType: .passportNumber, validationRules: [.required]),
+                FormQuestion(field: "purpose", text: "What is the primary purpose of your visit to the United States?", dataType: .text, validationRules: [.required, .minLength(5)]),
+                FormQuestion(field: "duration", text: "How long do you plan to stay in the United States?", dataType: .text, validationRules: [.required, .minLength(3)])
             ]
         case "medicaid":
             return [
-                FormQuestion(field: "fullName", text: "What is your full legal name?"),
-                FormQuestion(field: "dateOfBirth", text: "What is your date of birth?"),
-                FormQuestion(field: "income", text: "What is your monthly household income?"),
-                FormQuestion(field: "householdSize", text: "How many people are in your household?"),
-                FormQuestion(field: "address", text: "What is your current address?")
+                FormQuestion(field: "fullName", text: "What is your full legal name?", dataType: .name, validationRules: [.required]),
+                FormQuestion(field: "dateOfBirth", text: "What is your date of birth?", dataType: .date, validationRules: [.required]),
+                FormQuestion(field: "income", text: "What is your monthly household income?", dataType: .income, validationRules: [.required]),
+                FormQuestion(field: "householdSize", text: "How many people are in your household?", dataType: .text, validationRules: [.required, .minLength(1)]),
+                FormQuestion(field: "address", text: "What is your current address?", dataType: .address, validationRules: [.required])
             ]
         case "snap":
             return [
-                FormQuestion(field: "fullName", text: "What is your full legal name?"),
-                FormQuestion(field: "dateOfBirth", text: "What is your date of birth?"),
-                FormQuestion(field: "income", text: "What is your monthly household income?"),
-                FormQuestion(field: "expenses", text: "What are your monthly housing expenses?"),
-                FormQuestion(field: "address", text: "What is your current address?")
+                FormQuestion(field: "fullName", text: "What is your full legal name?", dataType: .name, validationRules: [.required]),
+                FormQuestion(field: "dateOfBirth", text: "What is your date of birth?", dataType: .date, validationRules: [.required]),
+                FormQuestion(field: "income", text: "What is your monthly household income?", dataType: .income, validationRules: [.required]),
+                FormQuestion(field: "expenses", text: "What are your monthly housing expenses?", dataType: .income, validationRules: [.required]),
+                FormQuestion(field: "address", text: "What is your current address?", dataType: .address, validationRules: [.required])
             ]
         case "tax-return":
             return [
-                FormQuestion(field: "fullName", text: "What is your full legal name?"),
-                FormQuestion(field: "ssn", text: "What is your Social Security Number?"),
-                FormQuestion(field: "income", text: "What was your total income for the tax year?"),
-                FormQuestion(field: "deductions", text: "What were your total deductions?"),
-                FormQuestion(field: "filingStatus", text: "What is your filing status?")
+                FormQuestion(field: "fullName", text: "What is your full legal name?", dataType: .name, validationRules: [.required]),
+                FormQuestion(field: "ssn", text: "What is your Social Security Number?", dataType: .ssn, validationRules: [.required]),
+                FormQuestion(field: "income", text: "What was your total income for the tax year?", dataType: .income, validationRules: [.required]),
+                FormQuestion(field: "deductions", text: "What were your total deductions?", dataType: .income, validationRules: [.required]),
+                FormQuestion(field: "filingStatus", text: "What is your filing status?", dataType: .text, validationRules: [.required, .minLength(3)])
             ]
         default:
             return []
@@ -1242,6 +1268,280 @@ struct FormFillingView: View {
 struct FormQuestion {
     let field: String
     let text: String
+    let dataType: FieldDataType
+    let validationRules: [ValidationRule]
+    
+    init(field: String, text: String, dataType: FieldDataType = .text, validationRules: [ValidationRule] = []) {
+        self.field = field
+        self.text = text
+        self.dataType = dataType
+        self.validationRules = validationRules
+    }
+}
+
+enum FieldDataType {
+    case name
+    case date
+    case phone
+    case email
+    case address
+    case licenseNumber
+    case passportNumber
+    case ssn
+    case zipCode
+    case state
+    case income
+    case text
+}
+
+enum ValidationRule: Equatable {
+    case required
+    case minLength(Int)
+    case maxLength(Int)
+    case pattern(String)
+    case custom(String)
+}
+
+struct ValidationResult {
+    let isValid: Bool
+    let message: String?
+    let suggestions: [String]?
+}
+
+// MARK: - Validation Functions
+extension FormQuestion {
+    func validate(_ value: String) -> ValidationResult {
+        // Check required rule
+        if validationRules.contains(.required) && value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return ValidationResult(isValid: false, message: "This field is required.", suggestions: nil)
+        }
+        
+        // Skip validation if empty and not required
+        if value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return ValidationResult(isValid: true, message: nil, suggestions: nil)
+        }
+        
+        // Data type specific validation
+        switch dataType {
+        case .name:
+            return validateName(value)
+        case .date:
+            return validateDate(value)
+        case .phone:
+            return validatePhone(value)
+        case .email:
+            return validateEmail(value)
+        case .address:
+            return validateAddress(value)
+        case .licenseNumber:
+            return validateLicenseNumber(value)
+        case .passportNumber:
+            return validatePassportNumber(value)
+        case .ssn:
+            return validateSSN(value)
+        case .zipCode:
+            return validateZipCode(value)
+        case .state:
+            return validateState(value)
+        case .income:
+            return validateIncome(value)
+        case .text:
+            return validateText(value)
+        }
+    }
+    
+    private func validateName(_ value: String) -> ValidationResult {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Check for minimum length
+        if trimmed.count < 2 {
+            return ValidationResult(isValid: false, message: "Name must be at least 2 characters long.", suggestions: nil)
+        }
+        
+        // Check for valid name pattern (letters, spaces, hyphens, apostrophes)
+        let namePattern = "^[A-Za-zÀ-ÿ\\s\\-']+$"
+        if trimmed.range(of: namePattern, options: .regularExpression) == nil {
+            return ValidationResult(isValid: false, message: "Name should only contain letters, spaces, hyphens, and apostrophes.", suggestions: nil)
+        }
+        
+        // Check for multiple words (first and last name)
+        let words = trimmed.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+        if words.count < 2 {
+            return ValidationResult(isValid: false, message: "Please enter your full name (first and last name).", suggestions: nil)
+        }
+        
+        return ValidationResult(isValid: true, message: nil, suggestions: nil)
+    }
+    
+    private func validateDate(_ value: String) -> ValidationResult {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Common date formats
+        let dateFormats = ["MM/dd/yyyy", "MM-dd-yyyy", "MM/dd/yy", "MM-dd-yy"]
+        let dateFormatter = DateFormatter()
+        
+        for format in dateFormats {
+            dateFormatter.dateFormat = format
+            if let date = dateFormatter.date(from: trimmed) {
+                // Check if date is reasonable (not in future, not too far in past)
+                let calendar = Calendar.current
+                let now = Date()
+                let minDate = calendar.date(byAdding: .year, value: -120, to: now)!
+                let maxDate = calendar.date(byAdding: .day, value: 1, to: now)!
+                
+                if date >= minDate && date <= maxDate {
+                    return ValidationResult(isValid: true, message: nil, suggestions: nil)
+                } else {
+                    return ValidationResult(isValid: false, message: "Please enter a valid date of birth.", suggestions: nil)
+                }
+            }
+        }
+        
+        return ValidationResult(isValid: false, message: "Please enter date in MM/DD/YYYY format (e.g., 01/15/1990).", suggestions: ["01/15/1990", "12/25/1985", "06/30/1975"])
+    }
+    
+    private func validatePhone(_ value: String) -> ValidationResult {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Remove all non-digit characters
+        let digits = trimmed.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+        
+        if digits.count == 10 {
+            return ValidationResult(isValid: true, message: nil, suggestions: nil)
+        } else if digits.count == 11 && digits.hasPrefix("1") {
+            return ValidationResult(isValid: true, message: nil, suggestions: nil)
+        } else {
+            return ValidationResult(isValid: false, message: "Please enter a valid 10-digit phone number.", suggestions: ["(555) 123-4567", "555-123-4567", "5551234567"])
+        }
+    }
+    
+    private func validateEmail(_ value: String) -> ValidationResult {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        let emailPattern = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+        if trimmed.range(of: emailPattern, options: .regularExpression) != nil {
+            return ValidationResult(isValid: true, message: nil, suggestions: nil)
+        } else {
+            return ValidationResult(isValid: false, message: "Please enter a valid email address.", suggestions: ["john.doe@example.com", "user@domain.com"])
+        }
+    }
+    
+    private func validateAddress(_ value: String) -> ValidationResult {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if trimmed.count < 10 {
+            return ValidationResult(isValid: false, message: "Address should include street number, name, and city.", suggestions: nil)
+        }
+        
+        // Check for street number
+        let words = trimmed.components(separatedBy: .whitespaces)
+        if let firstWord = words.first, Int(firstWord) != nil {
+            return ValidationResult(isValid: true, message: nil, suggestions: nil)
+        } else {
+            return ValidationResult(isValid: false, message: "Address should start with a street number.", suggestions: ["123 Main Street", "456 Oak Avenue"])
+        }
+    }
+    
+    private func validateLicenseNumber(_ value: String) -> ValidationResult {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // License numbers are typically 7-9 digits
+        let digits = trimmed.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+        
+        if digits.count >= 7 && digits.count <= 9 {
+            return ValidationResult(isValid: true, message: nil, suggestions: nil)
+        } else {
+            return ValidationResult(isValid: false, message: "License number should be 7-9 digits.", suggestions: ["1234567", "DL1234567"])
+        }
+    }
+    
+    private func validatePassportNumber(_ value: String) -> ValidationResult {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Passport numbers are typically 6-9 characters
+        if trimmed.count >= 6 && trimmed.count <= 9 {
+            return ValidationResult(isValid: true, message: nil, suggestions: nil)
+        } else {
+            return ValidationResult(isValid: false, message: "Passport number should be 6-9 characters.", suggestions: ["123456789", "P123456"])
+        }
+    }
+    
+    private func validateSSN(_ value: String) -> ValidationResult {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Remove all non-digit characters
+        let digits = trimmed.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+        
+        if digits.count == 9 {
+            return ValidationResult(isValid: true, message: nil, suggestions: nil)
+        } else {
+            return ValidationResult(isValid: false, message: "SSN should be 9 digits.", suggestions: ["123-45-6789", "123456789"])
+        }
+    }
+    
+    private func validateZipCode(_ value: String) -> ValidationResult {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Remove all non-digit characters
+        let digits = trimmed.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+        
+        if digits.count == 5 || digits.count == 9 {
+            return ValidationResult(isValid: true, message: nil, suggestions: nil)
+        } else {
+            return ValidationResult(isValid: false, message: "ZIP code should be 5 or 9 digits.", suggestions: ["12345", "12345-6789"])
+        }
+    }
+    
+    private func validateState(_ value: String) -> ValidationResult {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        let validStates = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"]
+        
+        if validStates.contains(trimmed.uppercased()) {
+            return ValidationResult(isValid: true, message: nil, suggestions: nil)
+        } else {
+            return ValidationResult(isValid: false, message: "Please enter a valid 2-letter state code.", suggestions: ["CA", "NY", "TX", "FL"])
+        }
+    }
+    
+    private func validateIncome(_ value: String) -> ValidationResult {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Remove currency symbols and commas
+        let cleanValue = trimmed.replacingOccurrences(of: "[$,]", with: "", options: .regularExpression)
+        
+        if let income = Double(cleanValue), income >= 0 {
+            return ValidationResult(isValid: true, message: nil, suggestions: nil)
+        } else {
+            return ValidationResult(isValid: false, message: "Please enter a valid income amount.", suggestions: ["50000", "$50,000", "75000"])
+        }
+    }
+    
+    private func validateText(_ value: String) -> ValidationResult {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Apply general validation rules
+        for rule in validationRules {
+            switch rule {
+            case .minLength(let min):
+                if trimmed.count < min {
+                    return ValidationResult(isValid: false, message: "Text must be at least \(min) characters long.", suggestions: nil)
+                }
+            case .maxLength(let max):
+                if trimmed.count > max {
+                    return ValidationResult(isValid: false, message: "Text must be no more than \(max) characters long.", suggestions: nil)
+                }
+            case .pattern(let pattern):
+                if trimmed.range(of: pattern, options: .regularExpression) == nil {
+                    return ValidationResult(isValid: false, message: "Text does not match required format.", suggestions: nil)
+                }
+            default:
+                break
+            }
+        }
+        
+        return ValidationResult(isValid: true, message: nil, suggestions: nil)
+    }
 }
 
 struct FormMessage: Identifiable {
@@ -1764,45 +2064,68 @@ struct MiniChatOverlay: View {
         inputText = ""
         isLoading = true
         
-        // Simulate AI processing and auto-fill
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            isLoading = false
+        // Validate the current field
+        if let currentQuestion = currentStep < questions.count ? questions[currentStep] : nil {
+            let validationResult = currentQuestion.validate(userInput)
             
-            // Analyze user input and auto-fill relevant fields
-            let response = generateAIResponse(for: userInput)
-            
-            // Auto-fill current field with user's answer
-            if let currentQuestion = currentStep < questions.count ? questions[currentStep] : nil {
+            if validationResult.isValid {
+                // Store the valid answer
                 formData[currentQuestion.field] = userInput
-            }
-            
-            // Auto-fill additional fields if detected
-            for (field, value) in response.autoFilledFields {
-                formData[field] = value
-            }
-            
-            // Ask next question if available
-            if currentStep < questions.count - 1 {
-                let nextQuestion = questions[currentStep + 1]
-                let nextQuestionMessage = FormMessage(
-                    id: UUID(),
-                    role: .assistant,
-                    content: "Great! Now for the next field: '\(nextQuestion.text)'",
-                    timestamp: Date()
-                )
-                messages.append(nextQuestionMessage)
                 
-                // Notify parent to scroll to the next field
-                onFieldAsked(currentStep + 1)
+                // Simulate AI processing and auto-fill
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    isLoading = false
+                    
+                    // Analyze user input and auto-fill relevant fields
+                    let response = generateAIResponse(for: userInput)
+                    
+                    // Auto-fill additional fields if detected
+                    for (field, value) in response.autoFilledFields {
+                        formData[field] = value
+                    }
+                    
+                    // Ask next question if available
+                    if currentStep < questions.count - 1 {
+                        let nextQuestion = questions[currentStep + 1]
+                        let nextQuestionMessage = FormMessage(
+                            id: UUID(),
+                            role: .assistant,
+                            content: "Great! Now for the next field: '\(nextQuestion.text)'",
+                            timestamp: Date()
+                        )
+                        messages.append(nextQuestionMessage)
+                        
+                        // Notify parent to scroll to the next field
+                        onFieldAsked(currentStep + 1)
+                    } else {
+                        // Form is complete
+                        let completionMessage = FormMessage(
+                            id: UUID(),
+                            role: .assistant,
+                            content: "Perfect! You've completed all form fields. You can now review and submit your \(template.name.lowercased()).",
+                            timestamp: Date()
+                        )
+                        messages.append(completionMessage)
+                    }
+                }
             } else {
-                // Form is complete
-                let completionMessage = FormMessage(
-                    id: UUID(),
-                    role: .assistant,
-                    content: "Perfect! You've completed all form fields. You can now review and submit your \(template.name.lowercased()).",
-                    timestamp: Date()
-                )
-                messages.append(completionMessage)
+                // Handle validation error
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    isLoading = false
+                    
+                    var errorMessage = validationResult.message ?? "Please provide a valid answer."
+                    if let suggestions = validationResult.suggestions, !suggestions.isEmpty {
+                        errorMessage += "\n\nExamples: \(suggestions.joined(separator: ", "))"
+                    }
+                    
+                    let errorResponse = FormMessage(
+                        id: UUID(),
+                        role: .assistant,
+                        content: errorMessage,
+                        timestamp: Date()
+                    )
+                    messages.append(errorResponse)
+                }
             }
         }
     }
