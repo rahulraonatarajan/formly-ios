@@ -1057,7 +1057,9 @@ struct FormFillingView: View {
                 MiniChatOverlay(
                     template: template,
                     formData: $formData,
-                    isVisible: $showingMiniChat
+                    isVisible: $showingMiniChat,
+                    currentStep: currentStep,
+                    questions: getQuestionsForTemplate()
                 )
             }
         }
@@ -1571,6 +1573,8 @@ struct MiniChatOverlay: View {
     let template: FormTemplate
     @Binding var formData: [String: String]
     @Binding var isVisible: Bool
+    let currentStep: Int
+    let questions: [FormQuestion]
     
     @State private var messages: [FormMessage] = []
     @State private var inputText = ""
@@ -1660,7 +1664,7 @@ struct MiniChatOverlay: View {
                         }
                     }
                 }
-                .frame(maxHeight: 300)
+                .frame(maxHeight: 250) // Reduced height to show more form
                 
                 // Input area
                 HStack(spacing: 12) {
@@ -1681,14 +1685,16 @@ struct MiniChatOverlay: View {
             .cornerRadius(16)
             .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
             .padding(.horizontal, 20)
-            .padding(.vertical, 100)
+            .padding(.top, 60) // Reduced top padding to show more form
+            .padding(.bottom, 20) // Reduced bottom padding
         }
         .onAppear {
             if messages.isEmpty {
+                let currentQuestion = currentStep < questions.count ? questions[currentStep] : nil
                 let welcomeMessage = FormMessage(
                     id: UUID(),
                     role: .assistant,
-                    content: "Hi! I can help you fill out your \(template.name.lowercased()). What would you like to know?",
+                    content: generateContextualWelcomeMessage(currentQuestion: currentQuestion),
                     timestamp: Date()
                 )
                 messages.append(welcomeMessage)
@@ -1732,10 +1738,41 @@ struct MiniChatOverlay: View {
         }
     }
     
+    private func generateContextualWelcomeMessage(currentQuestion: FormQuestion?) -> String {
+        if let question = currentQuestion {
+            return "Hi! I can help you with the current field: '\(question.text)'. I can also help you with other form fields, gather required documents, or answer any questions about the \(template.name.lowercased()). What would you like assistance with?"
+        } else {
+            return "Hi! I can help you fill out your \(template.name.lowercased()). I can assist with form fields, gather required documents, or answer any questions. What would you like to know?"
+        }
+    }
+    
     private func generateAIResponse(for input: String) -> (message: String, autoFilledFields: [String: String]) {
         let lowercasedInput = input.lowercased()
         var autoFilledFields: [String: String] = [:]
         var response = ""
+        
+        // Get current question context
+        let currentQuestion = currentStep < questions.count ? questions[currentStep] : nil
+        
+        // Check if user is asking about current field
+        if let question = currentQuestion {
+            if lowercasedInput.contains("help") || lowercasedInput.contains("what") || lowercasedInput.contains("how") {
+                response = generateFieldHelpMessage(for: question)
+                return (response, autoFilledFields)
+            }
+        }
+        
+        // Check for document requirements
+        if lowercasedInput.contains("document") || lowercasedInput.contains("required") || lowercasedInput.contains("need") {
+            response = generateDocumentRequirementsMessage()
+            return (response, autoFilledFields)
+        }
+        
+        // Check for form completion status
+        if lowercasedInput.contains("progress") || lowercasedInput.contains("complete") || lowercasedInput.contains("done") {
+            response = generateProgressMessage()
+            return (response, autoFilledFields)
+        }
         
         // Simple keyword-based auto-fill logic
         if lowercasedInput.contains("name") || lowercasedInput.contains("full name") {
@@ -1772,10 +1809,52 @@ struct MiniChatOverlay: View {
                 response = "I've filled in a sample passport number. Please replace it with your actual passport number."
             }
         } else {
-            response = "I can help you fill out specific fields. Try asking about your name, address, phone number, email, date of birth, or other form-specific information."
+            response = "I can help you with the current field, fill out other form fields, gather required documents, or answer questions about the form. What would you like assistance with?"
         }
         
         return (response, autoFilledFields)
+    }
+    
+    private func generateFieldHelpMessage(for question: FormQuestion) -> String {
+        let fieldName = question.field.lowercased()
+        
+        if fieldName.contains("name") {
+            return "For the name field, please provide your full legal name as it appears on your government-issued ID. Make sure to include your first, middle (if applicable), and last name."
+        } else if fieldName.contains("address") {
+            return "For the address field, please provide your current residential address. Include the street number, street name, apartment/unit number (if applicable), city, state, and ZIP code."
+        } else if fieldName.contains("phone") {
+            return "For the phone number field, please provide your primary contact number. Include the area code and ensure it's a number where you can be reached during business hours."
+        } else if fieldName.contains("email") {
+            return "For the email field, please provide a valid email address that you check regularly. This will be used for important communications about your application."
+        } else if fieldName.contains("date") || fieldName.contains("birth") {
+            return "For the date of birth field, please provide your birth date in MM/DD/YYYY format. Make sure this matches your government-issued identification."
+        } else if fieldName.contains("license") {
+            return "For the driver's license number field, please provide your current driver's license number exactly as it appears on your license card."
+        } else if fieldName.contains("passport") {
+            return "For the passport number field, please provide your passport number exactly as it appears on your passport. This is typically a 9-digit number."
+        } else {
+            return "For this field, please provide accurate and complete information. If you're unsure about any details, I can help you gather the required information or documents."
+        }
+    }
+    
+    private func generateDocumentRequirementsMessage() -> String {
+        if template.name.contains("DMV") {
+            return "For DMV License Renewal, you'll need:\n• Current driver's license\n• Proof of identity (birth certificate, passport)\n• Proof of residency (utility bill, lease agreement)\n• Payment method (credit card, check, or cash)\n• Vision test results (if required)\n• Medical certificate (if applicable)"
+        } else if template.name.contains("DS-160") {
+            return "For DS-160 Visa Application, you'll need:\n• Valid passport\n• Recent passport photo\n• Travel itinerary\n• Previous visa information (if applicable)\n• Employment/education history\n• Family information\n• Financial support documentation"
+        } else {
+            return "Required documents typically include:\n• Government-issued photo ID\n• Proof of address\n• Supporting documentation for specific fields\n• Payment method\n\nWould you like me to help you gather any specific documents?"
+        }
+    }
+    
+    private func generateProgressMessage() -> String {
+        let totalQuestions = questions.count
+        let completedQuestions = questions.enumerated().filter { index, question in
+            !(formData[question.field] ?? "").isEmpty
+        }.count
+        let progressPercentage = totalQuestions > 0 ? Int((Double(completedQuestions) / Double(totalQuestions)) * 100) : 0
+        
+        return "You've completed \(completedQuestions) out of \(totalQuestions) fields (\(progressPercentage)%). You're currently on field \(currentStep + 1): '\(currentStep < questions.count ? questions[currentStep].text : "Unknown")'. Keep going!"
     }
 }
 
