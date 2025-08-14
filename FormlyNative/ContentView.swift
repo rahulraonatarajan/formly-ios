@@ -839,7 +839,7 @@ struct FormFillingView: View {
     @State private var inputText = ""
     @State private var isLoading = false
     @State private var showingFormPreview = false
-    @State private var entryMode: EntryMode = .conversational
+    @State private var entryMode: EntryMode = .structured
     
     enum EntryMode {
         case conversational
