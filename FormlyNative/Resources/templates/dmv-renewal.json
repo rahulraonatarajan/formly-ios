@@ -1,0 +1,367 @@
+{
+  "metadata": {
+    "id": "dmv-license-renewal",
+    "name": "DMV License Renewal",
+    "version": "1.0.0",
+    "languageSupport": ["en"],
+    "category": "government",
+    "description": "Driver license renewal application for all US states",
+    "estimatedTime": 15,
+    "difficulty": "medium"
+  },
+  "schema": {
+    "sections": [
+      {
+        "id": "personal-info",
+        "title": "Personal Information",
+        "description": "Basic personal information for license renewal",
+        "fields": [
+          {
+            "id": "fullName",
+            "label": "Full Legal Name",
+            "type": "text",
+            "required": true,
+            "validation": {
+              "pattern": "^[A-Za-z\\s\\-']{2,50}$",
+              "message": "Please enter your full legal name as it appears on your current license"
+            },
+            "aiPrompt": "Ask for the person's full legal name as it appears on their current driver's license. This should match exactly what's on their existing license."
+          },
+          {
+            "id": "dateOfBirth",
+            "label": "Date of Birth",
+            "type": "date",
+            "required": true,
+            "validation": {
+              "minAge": 16,
+              "maxAge": 120,
+              "message": "Please enter a valid date of birth"
+            },
+            "aiPrompt": "Ask for their date of birth. Verify they are old enough to renew their license in their state."
+          },
+          {
+            "id": "licenseNumber",
+            "label": "Current License Number",
+            "type": "text",
+            "required": true,
+            "validation": {
+              "pattern": "^[A-Z0-9]{5,15}$",
+              "message": "Please enter your current license number"
+            },
+            "aiPrompt": "Ask for their current driver's license number. This is usually found on their existing license card."
+          },
+          {
+            "id": "ssn",
+            "label": "Social Security Number (Last 4 digits)",
+            "type": "text",
+            "required": true,
+            "validation": {
+              "pattern": "^[0-9]{4}$",
+              "message": "Please enter the last 4 digits of your Social Security Number"
+            },
+            "aiPrompt": "Ask for the last 4 digits of their Social Security Number. This is required for license renewal in most states."
+          }
+        ]
+      },
+      {
+        "id": "address",
+        "title": "Address Information",
+        "description": "Current residential address",
+        "fields": [
+          {
+            "id": "streetAddress",
+            "label": "Street Address",
+            "type": "text",
+            "required": true,
+            "validation": {
+              "minLength": 5,
+              "maxLength": 100,
+              "message": "Please enter your complete street address"
+            },
+            "aiPrompt": "Ask for their current residential street address. This should be where they actually live."
+          },
+          {
+            "id": "city",
+            "label": "City",
+            "type": "text",
+            "required": true,
+            "validation": {
+              "minLength": 2,
+              "maxLength": 50,
+              "message": "Please enter your city"
+            },
+            "aiPrompt": "Ask for the city where they currently live."
+          },
+          {
+            "id": "state",
+            "label": "State",
+            "type": "select",
+            "required": true,
+            "options": [
+              "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+              "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+              "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+              "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+              "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+            ],
+            "validation": {
+              "message": "Please select your state"
+            },
+            "aiPrompt": "Ask which state they are renewing their license in. This determines the specific requirements and fees."
+          },
+          {
+            "id": "zipCode",
+            "label": "ZIP Code",
+            "type": "text",
+            "required": true,
+            "validation": {
+              "pattern": "^[0-9]{5}(-[0-9]{4})?$",
+              "message": "Please enter a valid ZIP code"
+            },
+            "aiPrompt": "Ask for their ZIP code."
+          }
+        ]
+      },
+      {
+        "id": "eligibility",
+        "title": "Eligibility Questions",
+        "description": "Questions to determine renewal eligibility",
+        "fields": [
+          {
+            "id": "visionTest",
+            "label": "When was your last vision test?",
+            "type": "date",
+            "required": true,
+            "validation": {
+              "maxDaysAgo": 730,
+              "message": "Vision test must be within the last 2 years"
+            },
+            "aiPrompt": "Ask when they last had a vision test. Most states require a vision test within the last 2 years for renewal."
+          },
+          {
+            "id": "licenseSuspended",
+            "label": "Is your license currently suspended or revoked?",
+            "type": "boolean",
+            "required": true,
+            "validation": {
+              "message": "Please answer this question"
+            },
+            "aiPrompt": "Ask if their driver's license is currently suspended or revoked. If yes, they may not be eligible for renewal."
+          },
+          {
+            "id": "medicalConditions",
+            "label": "Do you have any medical conditions that could affect your ability to drive safely?",
+            "type": "boolean",
+            "required": true,
+            "validation": {
+              "message": "Please answer this question"
+            },
+            "aiPrompt": "Ask if they have any medical conditions that could affect their ability to drive safely. This is important for safety."
+          },
+          {
+            "id": "organDonor",
+            "label": "Would you like to be an organ donor?",
+            "type": "boolean",
+            "required": false,
+            "validation": {
+              "message": "Please answer this question"
+            },
+            "aiPrompt": "Ask if they would like to be an organ donor. This is optional but encouraged."
+          }
+        ]
+      },
+      {
+        "id": "fees",
+        "title": "Fees and Payment",
+        "description": "License renewal fees and payment information",
+        "fields": [
+          {
+            "id": "renewalType",
+            "label": "Renewal Type",
+            "type": "select",
+            "required": true,
+            "options": [
+              "standard",
+              "real-id",
+              "enhanced"
+            ],
+            "validation": {
+              "message": "Please select your renewal type"
+            },
+            "aiPrompt": "Ask what type of license they want to renew: standard, REAL ID, or enhanced. REAL ID costs more but is required for domestic flights after 2025."
+          },
+          {
+            "id": "paymentMethod",
+            "label": "Payment Method",
+            "type": "select",
+            "required": true,
+            "options": [
+              "credit-card",
+              "debit-card",
+              "check",
+              "money-order"
+            ],
+            "validation": {
+              "message": "Please select your payment method"
+            },
+            "aiPrompt": "Ask how they would like to pay for their license renewal. Most DMVs accept credit cards, debit cards, checks, or money orders."
+          }
+        ]
+      }
+    ]
+  },
+  "conversationFlow": {
+    "steps": [
+      {
+        "id": "welcome",
+        "title": "Welcome to DMV License Renewal",
+        "description": "I'll help you renew your driver's license. This process typically takes about 15 minutes.",
+        "expectedFields": [],
+        "validationRules": [],
+        "conditionalLogic": []
+      },
+      {
+        "id": "state-selection",
+        "title": "Select Your State",
+        "description": "First, I need to know which state you're renewing your license in.",
+        "expectedFields": ["state"],
+        "validationRules": [],
+        "conditionalLogic": []
+      },
+      {
+        "id": "personal-info",
+        "title": "Personal Information",
+        "description": "Now I'll collect your basic personal information.",
+        "expectedFields": ["fullName", "dateOfBirth", "licenseNumber", "ssn"],
+        "validationRules": [
+          {
+            "field": "dateOfBirth",
+            "rule": "minAge",
+            "value": 16,
+            "message": "You must be at least 16 years old to renew a driver's license."
+          }
+        ],
+        "conditionalLogic": []
+      },
+      {
+        "id": "address-verification",
+        "title": "Address Verification",
+        "description": "I need to verify your current residential address.",
+        "expectedFields": ["streetAddress", "city", "zipCode"],
+        "validationRules": [],
+        "conditionalLogic": [
+          {
+            "condition": "addressChanged",
+            "action": "requireDocuments",
+            "documents": ["proof-of-address"]
+          }
+        ]
+      },
+      {
+        "id": "eligibility-check",
+        "title": "Eligibility Questions",
+        "description": "I need to ask a few questions to determine your eligibility for renewal.",
+        "expectedFields": ["visionTest", "licenseSuspended", "medicalConditions", "organDonor"],
+        "validationRules": [
+          {
+            "field": "licenseSuspended",
+            "rule": "equals",
+            "value": false,
+            "message": "You cannot renew your license while it is suspended or revoked."
+          },
+          {
+            "field": "visionTest",
+            "rule": "withinDays",
+            "value": 730,
+            "message": "Your vision test must be within the last 2 years."
+          }
+        ],
+        "conditionalLogic": [
+          {
+            "condition": "licenseSuspended",
+            "action": "stopProcess",
+            "message": "You must resolve your license suspension before renewing."
+          },
+          {
+            "condition": "medicalConditions",
+            "action": "requireMedicalClearance",
+            "message": "You may need medical clearance before renewing your license."
+          }
+        ]
+      },
+      {
+        "id": "fee-calculation",
+        "title": "Fee Calculation",
+        "description": "Let me calculate your renewal fees based on your selections.",
+        "expectedFields": ["renewalType", "paymentMethod"],
+        "validationRules": [],
+        "conditionalLogic": []
+      },
+      {
+        "id": "review",
+        "title": "Review and Confirm",
+        "description": "Please review all your information before we proceed.",
+        "expectedFields": [],
+        "validationRules": [],
+        "conditionalLogic": []
+      }
+    ]
+  },
+  "review": {
+    "checklists": [
+      {
+        "id": "documents-required",
+        "title": "Documents You'll Need",
+        "items": [
+          "Current driver's license",
+          "Proof of identity (passport, birth certificate, etc.)",
+          "Proof of address (utility bill, bank statement, etc.)",
+          "Payment method",
+          "Vision test results (if required)"
+        ]
+      },
+      {
+        "id": "appointment-checklist",
+        "title": "Before Your DMV Appointment",
+        "items": [
+          "Bring all required documents",
+          "Arrive 15 minutes early",
+          "Have payment ready",
+          "Bring reading glasses if needed for vision test",
+          "Know your Social Security Number"
+        ]
+      }
+    ],
+    "submissionGuidance": "After completing this form, you'll need to visit your local DMV office to submit your application and take any required tests. Bring all the documents listed above.",
+    "feeInfo": {
+      "standard": {
+        "base": 25,
+        "currency": "USD",
+        "description": "Standard license renewal fee"
+      },
+      "real-id": {
+        "base": 35,
+        "currency": "USD",
+        "description": "REAL ID license renewal fee (includes standard fee + REAL ID upgrade)"
+      },
+      "enhanced": {
+        "base": 45,
+        "currency": "USD",
+        "description": "Enhanced license renewal fee (includes standard fee + enhanced features)"
+      },
+      "additionalFees": [
+        {
+          "name": "Organ Donor",
+          "amount": 0,
+          "description": "No additional fee for organ donor designation"
+        },
+        {
+          "name": "Late Renewal",
+          "amount": 10,
+          "description": "Additional fee if renewing after expiration date"
+        }
+      ]
+    }
+  },
+  "systemPrompt": "You are Formly, an offline-first form-filling assistant helping with DMV license renewal. Follow these rules:\n- Only use the provided schema, user answers, and retrieved context to propose updates.\n- When you need to write output, respond as compact JSON with the shape:\n  { \"updates\": [{\"fieldId\": string, \"value\": any}], \"nextStepId\": string, \"notes\": string[] }\n- Validate all values against field types and constraints; if invalid, request a corrected value.\n- Never include personal data not explicitly provided by the user.\n- Operate entirely on-device. If a capability is unavailable, fall back to rules + RAG and ask concise clarifying questions.\n\nContext: DMV license renewal. Respect state-specific rules. Only ask for required fields.\nPrioritize: accuracy, eligibility checks, and checklist completeness.\nOutput format: same compact JSON update object as Core Assistant."
+}

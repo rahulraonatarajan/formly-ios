@@ -1,0 +1,535 @@
+{
+  "metadata": {
+    "id": "ds-160",
+    "name": "DS-160 Nonimmigrant Visa Application",
+    "version": "1.0.0",
+    "languageSupport": ["en"],
+    "category": "government",
+    "description": "Online Nonimmigrant Visa Application (DS-160) for US visa applications",
+    "estimatedTime": 45,
+    "difficulty": "high"
+  },
+  "schema": {
+    "sections": [
+      {
+        "id": "personal-info",
+        "title": "Personal Information",
+        "description": "Basic personal information for visa application",
+        "fields": [
+          {
+            "id": "surname",
+            "label": "Surname/Family Name",
+            "type": "text",
+            "required": true,
+            "validation": {
+              "pattern": "^[A-Za-z\\s\\-']{1,50}$",
+              "message": "Please enter your surname exactly as it appears in your passport"
+            },
+            "aiPrompt": "Ask for their surname or family name exactly as it appears in their passport. This must match their passport exactly."
+          },
+          {
+            "id": "givenName",
+            "label": "Given Names",
+            "type": "text",
+            "required": true,
+            "validation": {
+              "pattern": "^[A-Za-z\\s\\-']{1,50}$",
+              "message": "Please enter your given names exactly as they appear in your passport"
+            },
+            "aiPrompt": "Ask for their given names (first and middle names) exactly as they appear in their passport."
+          },
+          {
+            "id": "fullNameNative",
+            "label": "Full Name in Native Alphabet",
+            "type": "text",
+            "required": false,
+            "validation": {
+              "maxLength": 100,
+              "message": "Please enter your full name in your native alphabet"
+            },
+            "aiPrompt": "Ask for their full name in their native alphabet if different from English. This is optional but helpful."
+          },
+          {
+            "id": "dateOfBirth",
+            "label": "Date of Birth",
+            "type": "date",
+            "required": true,
+            "validation": {
+              "minAge": 0,
+              "maxAge": 120,
+              "message": "Please enter a valid date of birth"
+            },
+            "aiPrompt": "Ask for their date of birth. This must match their passport exactly."
+          },
+          {
+            "id": "placeOfBirth",
+            "label": "Place of Birth (City/Town/Village)",
+            "type": "text",
+            "required": true,
+            "validation": {
+              "minLength": 2,
+              "maxLength": 50,
+              "message": "Please enter your place of birth"
+            },
+            "aiPrompt": "Ask for their place of birth (city, town, or village) exactly as it appears in their passport."
+          },
+          {
+            "id": "countryOfBirth",
+            "label": "Country of Birth",
+            "type": "select",
+            "required": true,
+            "options": [
+              "AF", "AL", "DZ", "AS", "AD", "AO", "AI", "AQ", "AG", "AR",
+              "AM", "AW", "AU", "AT", "AZ", "BS", "BH", "BD", "BB", "BY",
+              "BE", "BZ", "BJ", "BM", "BT", "BO", "BA", "BW", "BV", "BR",
+              "IO", "BN", "BG", "BF", "BI", "KH", "CM", "CA", "CV", "KY",
+              "CF", "TD", "CL", "CN", "CX", "CC", "CO", "KM", "CG", "CD",
+              "CK", "CR", "CI", "HR", "CU", "CY", "CZ", "DK", "DJ", "DM",
+              "DO", "TP", "EC", "EG", "SV", "GQ", "ER", "EE", "ET", "FK",
+              "FO", "FJ", "FI", "FR", "FX", "GF", "PF", "TF", "GA", "GM",
+              "GE", "DE", "GH", "GI", "GR", "GL", "GD", "GP", "GU", "GT",
+              "GN", "GW", "GY", "HT", "HM", "VA", "HN", "HK", "HU", "IS",
+              "IN", "ID", "IR", "IQ", "IE", "IL", "IT", "JM", "JP", "JO",
+              "KZ", "KE", "KI", "KP", "KR", "KW", "KG", "LA", "LV", "LB",
+              "LS", "LR", "LY", "LI", "LT", "LU", "MO", "MK", "MG", "MW",
+              "MY", "MV", "ML", "MT", "MH", "MQ", "MR", "MU", "YT", "MX",
+              "FM", "MD", "MC", "MN", "MS", "MA", "MZ", "MM", "NA", "NR",
+              "NP", "NL", "NC", "NZ", "NI", "NE", "NG", "NU", "NF", "MP",
+              "NO", "OM", "PK", "PW", "PS", "PA", "PG", "PY", "PE", "PH",
+              "PN", "PL", "PT", "PR", "QA", "RE", "RO", "RU", "RW", "SH",
+              "KN", "LC", "PM", "VC", "WS", "SM", "ST", "SA", "SN", "SC",
+              "SL", "SG", "SK", "SI", "SB", "SO", "ZA", "GS", "ES", "LK",
+              "SD", "SR", "SJ", "SZ", "SE", "CH", "SY", "TW", "TJ", "TZ",
+              "TH", "TG", "TK", "TO", "TT", "TN", "TR", "TM", "TC", "TV",
+              "UG", "UA", "AE", "GB", "US", "UM", "UY", "UZ", "VU", "VE",
+              "VN", "VG", "VI", "WF", "EH", "YE", "ZM", "ZW"
+            ],
+            "validation": {
+              "message": "Please select your country of birth"
+            },
+            "aiPrompt": "Ask for their country of birth. This must match their passport exactly."
+          },
+          {
+            "id": "nationality",
+            "label": "Nationality",
+            "type": "select",
+            "required": true,
+            "options": [
+              "AF", "AL", "DZ", "AS", "AD", "AO", "AI", "AQ", "AG", "AR",
+              "AM", "AW", "AU", "AT", "AZ", "BS", "BH", "BD", "BB", "BY",
+              "BE", "BZ", "BJ", "BM", "BT", "BO", "BA", "BW", "BV", "BR",
+              "IO", "BN", "BG", "BF", "BI", "KH", "CM", "CA", "CV", "KY",
+              "CF", "TD", "CL", "CN", "CX", "CC", "CO", "KM", "CG", "CD",
+              "CK", "CR", "CI", "HR", "CU", "CY", "CZ", "DK", "DJ", "DM",
+              "DO", "TP", "EC", "EG", "SV", "GQ", "ER", "EE", "ET", "FK",
+              "FO", "FJ", "FI", "FR", "FX", "GF", "PF", "TF", "GA", "GM",
+              "GE", "DE", "GH", "GI", "GR", "GL", "GD", "GP", "GU", "GT",
+              "GN", "GW", "GY", "HT", "HM", "VA", "HN", "HK", "HU", "IS",
+              "IN", "ID", "IR", "IQ", "IE", "IL", "IT", "JM", "JP", "JO",
+              "KZ", "KE", "KI", "KP", "KR", "KW", "KG", "LA", "LV", "LB",
+              "LS", "LR", "LY", "LI", "LT", "LU", "MO", "MK", "MG", "MW",
+              "MY", "MV", "ML", "MT", "MH", "MQ", "MR", "MU", "YT", "MX",
+              "FM", "MD", "MC", "MN", "MS", "MA", "MZ", "MM", "NA", "NR",
+              "NP", "NL", "NC", "NZ", "NI", "NE", "NG", "NU", "NF", "MP",
+              "NO", "OM", "PK", "PW", "PS", "PA", "PG", "PY", "PE", "PH",
+              "PN", "PL", "PT", "PR", "QA", "RE", "RO", "RU", "RW", "SH",
+              "KN", "LC", "PM", "VC", "WS", "SM", "ST", "SA", "SN", "SC",
+              "SL", "SG", "SK", "SI", "SB", "SO", "ZA", "GS", "ES", "LK",
+              "SD", "SR", "SJ", "SZ", "SE", "CH", "SY", "TW", "TJ", "TZ",
+              "TH", "TG", "TK", "TO", "TT", "TN", "TR", "TM", "TC", "TV",
+              "UG", "UA", "AE", "GB", "US", "UM", "UY", "UZ", "VU", "VE",
+              "VN", "VG", "VI", "WF", "EH", "YE", "ZM", "ZW"
+            ],
+            "validation": {
+              "message": "Please select your nationality"
+            },
+            "aiPrompt": "Ask for their nationality. This is their citizenship and should match their passport."
+          }
+        ]
+      },
+      {
+        "id": "passport-info",
+        "title": "Passport Information",
+        "description": "Passport details for visa application",
+        "fields": [
+          {
+            "id": "passportNumber",
+            "label": "Passport Number",
+            "type": "text",
+            "required": true,
+            "validation": {
+              "pattern": "^[A-Z0-9]{6,15}$",
+              "message": "Please enter your passport number exactly as it appears in your passport"
+            },
+            "aiPrompt": "Ask for their passport number exactly as it appears in their passport. This is usually 6-15 characters long."
+          },
+          {
+            "id": "passportIssueDate",
+            "label": "Passport Issue Date",
+            "type": "date",
+            "required": true,
+            "validation": {
+              "maxDaysAgo": 36500,
+              "message": "Please enter a valid passport issue date"
+            },
+            "aiPrompt": "Ask for the date their passport was issued. This is found in their passport."
+          },
+          {
+            "id": "passportExpiryDate",
+            "label": "Passport Expiry Date",
+            "type": "date",
+            "required": true,
+            "validation": {
+              "minDaysFromNow": 6,
+              "message": "Passport must be valid for at least 6 months beyond your intended stay"
+            },
+            "aiPrompt": "Ask for the date their passport expires. It must be valid for at least 6 months beyond their intended stay in the US."
+          },
+          {
+            "id": "passportIssuingCountry",
+            "label": "Passport Issuing Country",
+            "type": "select",
+            "required": true,
+            "options": [
+              "AF", "AL", "DZ", "AS", "AD", "AO", "AI", "AQ", "AG", "AR",
+              "AM", "AW", "AU", "AT", "AZ", "BS", "BH", "BD", "BB", "BY",
+              "BE", "BZ", "BJ", "BM", "BT", "BO", "BA", "BW", "BV", "BR",
+              "IO", "BN", "BG", "BF", "BI", "KH", "CM", "CA", "CV", "KY",
+              "CF", "TD", "CL", "CN", "CX", "CC", "CO", "KM", "CG", "CD",
+              "CK", "CR", "CI", "HR", "CU", "CY", "CZ", "DK", "DJ", "DM",
+              "DO", "TP", "EC", "EG", "SV", "GQ", "ER", "EE", "ET", "FK",
+              "FO", "FJ", "FI", "FR", "FX", "GF", "PF", "TF", "GA", "GM",
+              "GE", "DE", "GH", "GI", "GR", "GL", "GD", "GP", "GU", "GT",
+              "GN", "GW", "GY", "HT", "HM", "VA", "HN", "HK", "HU", "IS",
+              "IN", "ID", "IR", "IQ", "IE", "IL", "IT", "JM", "JP", "JO",
+              "KZ", "KE", "KI", "KP", "KR", "KW", "KG", "LA", "LV", "LB",
+              "LS", "LR", "LY", "LI", "LT", "LU", "MO", "MK", "MG", "MW",
+              "MY", "MV", "ML", "MT", "MH", "MQ", "MR", "MU", "YT", "MX",
+              "FM", "MD", "MC", "MN", "MS", "MA", "MZ", "MM", "NA", "NR",
+              "NP", "NL", "NC", "NZ", "NI", "NE", "NG", "NU", "NF", "MP",
+              "NO", "OM", "PK", "PW", "PS", "PA", "PG", "PY", "PE", "PH",
+              "PN", "PL", "PT", "PR", "QA", "RE", "RO", "RU", "RW", "SH",
+              "KN", "LC", "PM", "VC", "WS", "SM", "ST", "SA", "SN", "SC",
+              "SL", "SG", "SK", "SI", "SB", "SO", "ZA", "GS", "ES", "LK",
+              "SD", "SR", "SJ", "SZ", "SE", "CH", "SY", "TW", "TJ", "TZ",
+              "TH", "TG", "TK", "TO", "TT", "TN", "TR", "TM", "TC", "TV",
+              "UG", "UA", "AE", "GB", "US", "UM", "UY", "UZ", "VU", "VE",
+              "VN", "VG", "VI", "WF", "EH", "YE", "ZM", "ZW"
+            ],
+            "validation": {
+              "message": "Please select the country that issued your passport"
+            },
+            "aiPrompt": "Ask for the country that issued their passport. This is usually the same as their nationality."
+          }
+        ]
+      },
+      {
+        "id": "travel-info",
+        "title": "Travel Information",
+        "description": "Details about your planned travel to the United States",
+        "fields": [
+          {
+            "id": "purposeOfTrip",
+            "label": "Purpose of Trip",
+            "type": "select",
+            "required": true,
+            "options": [
+              "business",
+              "tourism",
+              "medical",
+              "student",
+              "work",
+              "family_visit",
+              "transit",
+              "other"
+            ],
+            "validation": {
+              "message": "Please select the primary purpose of your trip"
+            },
+            "aiPrompt": "Ask for the primary purpose of their trip to the United States. This determines the type of visa they need."
+          },
+          {
+            "id": "intendedArrivalDate",
+            "label": "Intended Date of Arrival",
+            "type": "date",
+            "required": true,
+            "validation": {
+              "minDaysFromNow": 1,
+              "message": "Please enter a future date for your intended arrival"
+            },
+            "aiPrompt": "Ask for their intended date of arrival in the United States. This should be a future date."
+          },
+          {
+            "id": "intendedDepartureDate",
+            "label": "Intended Date of Departure",
+            "type": "date",
+            "required": true,
+            "validation": {
+              "minDaysFromNow": 2,
+              "message": "Please enter a date after your intended arrival"
+            },
+            "aiPrompt": "Ask for their intended date of departure from the United States. This should be after their arrival date."
+          },
+          {
+            "id": "addressInUS",
+            "label": "Address Where You Will Stay in the U.S.",
+            "type": "text",
+            "required": true,
+            "validation": {
+              "minLength": 10,
+              "maxLength": 200,
+              "message": "Please enter the complete address where you will stay"
+            },
+            "aiPrompt": "Ask for the complete address where they will stay in the United States. This should include street address, city, state, and ZIP code."
+          }
+        ]
+      },
+      {
+        "id": "security-questions",
+        "title": "Security and Background Questions",
+        "description": "Security questions required for visa application",
+        "fields": [
+          {
+            "id": "previousUSVisits",
+            "label": "Have you ever been in the U.S.?",
+            "type": "boolean",
+            "required": true,
+            "validation": {
+              "message": "Please answer this question"
+            },
+            "aiPrompt": "Ask if they have ever been in the United States before. This includes any previous visits, even brief ones."
+          },
+          {
+            "id": "previousVisaDenials",
+            "label": "Has anyone ever filed an immigrant visa petition on your behalf with the United States Citizenship and Immigration Services?",
+            "type": "boolean",
+            "required": true,
+            "validation": {
+              "message": "Please answer this question"
+            },
+            "aiPrompt": "Ask if anyone has ever filed an immigrant visa petition on their behalf with USCIS. This is important for determining eligibility."
+          },
+          {
+            "id": "criminalRecord",
+            "label": "Have you ever been arrested or convicted for any offense or crime, even though subject to a pardon, amnesty, or other similar action?",
+            "type": "boolean",
+            "required": true,
+            "validation": {
+              "message": "Please answer this question"
+            },
+            "aiPrompt": "Ask if they have ever been arrested or convicted for any offense or crime, even if they received a pardon or amnesty."
+          },
+          {
+            "id": "terrorism",
+            "label": "Do you seek to engage in or have you ever engaged in terrorist activities, espionage, sabotage, or genocide?",
+            "type": "boolean",
+            "required": true,
+            "validation": {
+              "message": "Please answer this question"
+            },
+            "aiPrompt": "Ask if they seek to engage in or have ever engaged in terrorist activities, espionage, sabotage, or genocide. This is a required security question."
+          }
+        ]
+      },
+      {
+        "id": "employment-education",
+        "title": "Employment and Education",
+        "description": "Current employment and educational background",
+        "fields": [
+          {
+            "id": "occupation",
+            "label": "Present Occupation",
+            "type": "text",
+            "required": true,
+            "validation": {
+              "minLength": 2,
+              "maxLength": 100,
+              "message": "Please enter your current occupation"
+            },
+            "aiPrompt": "Ask for their current occupation or job title. This should be their present employment."
+          },
+          {
+            "id": "employer",
+            "label": "Employer/School Name",
+            "type": "text",
+            "required": true,
+            "validation": {
+              "minLength": 2,
+              "maxLength": 100,
+              "message": "Please enter your employer or school name"
+            },
+            "aiPrompt": "Ask for the name of their current employer or school. If they are a student, enter the school name."
+          },
+          {
+            "id": "employerAddress",
+            "label": "Employer/School Address",
+            "type": "text",
+            "required": true,
+            "validation": {
+              "minLength": 10,
+              "maxLength": 200,
+              "message": "Please enter the complete address of your employer or school"
+            },
+            "aiPrompt": "Ask for the complete address of their employer or school. This should include street address, city, and country."
+          },
+          {
+            "id": "monthlyIncome",
+            "label": "Monthly Income",
+            "type": "select",
+            "required": true,
+            "options": [
+              "under_1000",
+              "1000_3000",
+              "3000_5000",
+              "5000_10000",
+              "over_10000",
+              "no_income"
+            ],
+            "validation": {
+              "message": "Please select your monthly income range"
+            },
+            "aiPrompt": "Ask for their monthly income range. This helps determine their financial situation for the visa application."
+          }
+        ]
+      }
+    ]
+  },
+  "conversationFlow": {
+    "steps": [
+      {
+        "id": "welcome",
+        "title": "Welcome to DS-160 Application",
+        "description": "I'll help you complete your DS-160 Nonimmigrant Visa Application. This process typically takes about 45 minutes.",
+        "expectedFields": [],
+        "validationRules": [],
+        "conditionalLogic": []
+      },
+      {
+        "id": "personal-info",
+        "title": "Personal Information",
+        "description": "Let's start with your basic personal information.",
+        "expectedFields": ["surname", "givenName", "fullNameNative", "dateOfBirth", "placeOfBirth", "countryOfBirth", "nationality"],
+        "validationRules": [],
+        "conditionalLogic": []
+      },
+      {
+        "id": "passport-info",
+        "title": "Passport Information",
+        "description": "Now I need your passport details.",
+        "expectedFields": ["passportNumber", "passportIssueDate", "passportExpiryDate", "passportIssuingCountry"],
+        "validationRules": [
+          {
+            "field": "passportExpiryDate",
+            "rule": "minDaysFromNow",
+            "value": 180,
+            "message": "Your passport must be valid for at least 6 months beyond your intended stay."
+          }
+        ],
+        "conditionalLogic": []
+      },
+      {
+        "id": "travel-info",
+        "title": "Travel Information",
+        "description": "Tell me about your planned travel to the United States.",
+        "expectedFields": ["purposeOfTrip", "intendedArrivalDate", "intendedDepartureDate", "addressInUS"],
+        "validationRules": [
+          {
+            "field": "intendedDepartureDate",
+            "rule": "after",
+            "value": "intendedArrivalDate",
+            "message": "Your departure date must be after your arrival date."
+          }
+        ],
+        "conditionalLogic": []
+      },
+      {
+        "id": "security-questions",
+        "title": "Security and Background Questions",
+        "description": "I need to ask some security and background questions.",
+        "expectedFields": ["previousUSVisits", "previousVisaDenials", "criminalRecord", "terrorism"],
+        "validationRules": [],
+        "conditionalLogic": [
+          {
+            "condition": "criminalRecord",
+            "action": "requireDetails",
+            "message": "You must provide details about any arrests or convictions."
+          },
+          {
+            "condition": "terrorism",
+            "action": "stopProcess",
+            "message": "You are not eligible for a visa if you have engaged in terrorist activities."
+          }
+        ]
+      },
+      {
+        "id": "employment-education",
+        "title": "Employment and Education",
+        "description": "Finally, let me ask about your current employment and education.",
+        "expectedFields": ["occupation", "employer", "employerAddress", "monthlyIncome"],
+        "validationRules": [],
+        "conditionalLogic": []
+      },
+      {
+        "id": "review",
+        "title": "Review and Confirm",
+        "description": "Please review all your information before we submit.",
+        "expectedFields": [],
+        "validationRules": [],
+        "conditionalLogic": []
+      }
+    ]
+  },
+  "review": {
+    "checklists": [
+      {
+        "id": "documents-required",
+        "title": "Documents You'll Need for Interview",
+        "items": [
+          "Valid passport (must be valid for at least 6 months beyond intended stay)",
+          "DS-160 confirmation page",
+          "Visa application fee receipt",
+          "Photo (2x2 inches, taken within last 6 months)",
+          "Proof of financial support",
+          "Employment letter (if applicable)",
+          "School transcripts (if student)",
+          "Travel itinerary",
+          "Hotel reservations or invitation letter"
+        ]
+      },
+      {
+        "id": "interview-checklist",
+        "title": "Before Your Visa Interview",
+        "items": [
+          "Review all your answers carefully",
+          "Bring all required documents",
+          "Arrive at embassy/consulate 30 minutes early",
+          "Dress appropriately for the interview",
+          "Be prepared to answer questions about your trip",
+          "Bring proof of ties to your home country",
+          "Have your travel dates confirmed"
+        ]
+      }
+    ],
+    "submissionGuidance": "After completing this form, you'll receive a confirmation page with a barcode. Print this page and bring it to your visa interview. You'll also need to schedule an interview at your local U.S. embassy or consulate.",
+    "feeInfo": {
+      "visaApplicationFee": {
+        "amount": 160,
+        "currency": "USD",
+        "description": "Non-refundable visa application fee"
+      },
+      "additionalFees": [
+        {
+          "name": "Visa Issuance Fee",
+          "amount": "varies",
+          "description": "Additional fee based on reciprocity with your country"
+        },
+        {
+          "name": "SEVIS Fee",
+          "amount": "varies",
+          "description": "Required for student and exchange visitor visas"
+        }
+      ]
+    }
+  },
+  "systemPrompt": "You are Formly, an offline-first form-filling assistant helping with DS-160 visa application. Follow these rules:\n- Only use the provided schema, user answers, and retrieved context to propose updates.\n- When you need to write output, respond as compact JSON with the shape:\n  { \"updates\": [{\"fieldId\": string, \"value\": any}], \"nextStepId\": string, \"notes\": string[] }\n- Validate all values against field types and constraints; if invalid, request a corrected value.\n- Never include personal data not explicitly provided by the user.\n- Operate entirely on-device. If a capability is unavailable, fall back to rules + RAG and ask concise clarifying questions.\n\nContext: DS-160 nonimmigrant visa application. Follow strict formatting rules for names, addresses, dates, and passport data.\nAsk only one focused question at a time, validate, then proceed.\nOutput format: same compact JSON update object as Core Assistant."
+}
