@@ -1111,7 +1111,7 @@ struct FormFillingView: View {
         inputText = ""
         isLoading = true
         
-        // Store the answer
+        // Store the answer and auto-fill the current field
         let questions = getQuestionsForTemplate()
         if currentStep < questions.count {
             formData[questions[currentStep].field] = userInput
@@ -1123,7 +1123,15 @@ struct FormFillingView: View {
             currentStep += 1
             
             if currentStep < questions.count {
-                askNextQuestion()
+                // Ask next question automatically
+                let nextQuestion = questions[currentStep]
+                let nextQuestionMessage = FormMessage(
+                    id: UUID(),
+                    role: .assistant,
+                    content: "Great! Now for the next field: '\(nextQuestion.text)'",
+                    timestamp: Date()
+                )
+                messages.append(nextQuestionMessage)
             } else {
                 completeForm()
             }
@@ -1143,7 +1151,7 @@ struct FormFillingView: View {
         let completionMessage = FormMessage(
             id: UUID(),
             role: .assistant,
-            content: "Great! I've collected all the information for your \(template.name.lowercased()). Your form is now complete and ready to submit.",
+            content: "Perfect! You've completed all form fields. You can now review and submit your \(template.name.lowercased()).",
             timestamp: Date()
         )
         messages.append(completionMessage)
@@ -1723,17 +1731,36 @@ struct MiniChatOverlay: View {
             
             // Analyze user input and auto-fill relevant fields
             let response = generateAIResponse(for: userInput)
-            let aiMessage = FormMessage(
-                id: UUID(),
-                role: .assistant,
-                content: response.message,
-                timestamp: Date()
-            )
-            messages.append(aiMessage)
             
-            // Auto-fill fields if detected
+            // Auto-fill current field with user's answer
+            if let currentQuestion = currentStep < questions.count ? questions[currentStep] : nil {
+                formData[currentQuestion.field] = userInput
+            }
+            
+            // Auto-fill additional fields if detected
             for (field, value) in response.autoFilledFields {
                 formData[field] = value
+            }
+            
+            // Ask next question if available
+            if currentStep < questions.count - 1 {
+                let nextQuestion = questions[currentStep + 1]
+                let nextQuestionMessage = FormMessage(
+                    id: UUID(),
+                    role: .assistant,
+                    content: "Great! Now for the next field: '\(nextQuestion.text)'",
+                    timestamp: Date()
+                )
+                messages.append(nextQuestionMessage)
+            } else {
+                // Form is complete
+                let completionMessage = FormMessage(
+                    id: UUID(),
+                    role: .assistant,
+                    content: "Perfect! You've completed all form fields. You can now review and submit your \(template.name.lowercased()).",
+                    timestamp: Date()
+                )
+                messages.append(completionMessage)
             }
         }
     }
